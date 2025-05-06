@@ -1,0 +1,110 @@
+📝 Product Requirements Document (PRD)
+1. 🧭 Purpose
+
+The AI Resume Builder is a SaaS platform designed to help users easily create polished, personalized, and optimized resumes. Using AI-driven tools and a modern, intuitive interface, it simplifies the resume-building process for users across experience levels.
+2. 🎯 Objectives & Goals
+
+    Enable users to create job-tailored resumes in under 10 minutes.
+
+    Auto-generate resume content based on user input and job descriptions.
+
+    Offer ATS-friendly templates.
+
+    Support resume export in various formats (PDF, DOCX).
+
+    Integrate with platforms like LinkedIn and job boards.
+
+    Provide real-time analytics and optimization tips.
+
+3. 👥 Target Audience
+
+    Primary: Job seekers — students, professionals, and career switchers.
+
+    Secondary: Recruiters, HR consultants, and career coaches.
+
+4. 🧩 Key Features & Requirements
+4.1. User Registration & Management
+
+    Sign up/login via email, Google, or LinkedIn (OAuth-based).
+
+    Dashboard for managing multiple resumes.
+
+    Subscription plans (Free, Premium) with appropriate feature gating.
+
+4.2. Resume Creation
+
+    Step-by-step resume builder with a wizard-style flow.
+
+    NLP-based parsing of uploaded resumes.
+
+    Manual input with option to import data from LinkedIn.
+
+    AI-assisted writing for resume sections.
+
+    Tailored resume suggestions based on job descriptions.
+
+    Multiple modern, creative, and classic templates.
+
+4.3. AI-Powered Content Generation
+
+    GPT-style AI writing assistant for:
+
+        Professional summaries
+
+        Job experience bullet points
+
+        Skills and keyword suggestions
+
+        Cover letters
+
+    Adjustable tone (formal, concise, enthusiastic).
+
+    Resume scoring system (based on ATS criteria and keyword density).
+
+4.4. Templates & Design
+
+    Customizable templates aligned with professional design standards.
+
+    Drag-and-drop or toggle UI for rearranging sections.
+
+    Real-time preview of edits.
+
+    Light and dark mode support.
+
+    Built using shadcn UI components for consistency and accessibility.
+
+4.5. Exporting & Integration
+
+    Export resumes as PDF and DOCX.
+
+    Import/export LinkedIn data.
+
+    Save, download, or share resume via link or email.
+
+4.6. Job Matching & Optimization (Premium)
+
+    AI-based matching of resumes to job descriptions.
+
+    Intelligent keyword and phrasing suggestions.
+
+    Detection of skill/content gaps.
+
+    Suggestions to improve alignment with job roles.
+
+4.7. Analytics Dashboard
+
+    Track resume views and downloads.
+
+    ATS readiness score with tips for improvement.
+
+    Keyword usage and density insights.
+
+4.8. Admin Panel
+
+    User and subscription management.
+
+    Platform analytics and feature usage tracking.
+
+    Billing and plan control.
+
+    Content moderation for shared templates and public profiles.
