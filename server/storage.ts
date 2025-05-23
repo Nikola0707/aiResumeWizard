@@ -1,8 +1,13 @@
-import { type User, type InsertUser, type Resume, type InsertResume } from "@shared/schema";
+import {
+  type User,
+  type InsertUser,
+  type Resume,
+  type InsertResume,
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { usersCollection, resumesCollection } from "./firestore-db";
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from "firebase-admin/firestore";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -13,16 +18,19 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
-  
+
   // Resume related methods
   getResume(id: number): Promise<Resume | undefined>;
   getResumesByUserId(userId: number): Promise<Resume[]>;
   createResume(resume: InsertResume): Promise<Resume>;
-  updateResume(id: number, resume: Partial<Resume>): Promise<Resume | undefined>;
+  updateResume(
+    id: number,
+    resume: Partial<Resume>
+  ): Promise<Resume | undefined>;
   deleteResume(id: number): Promise<boolean>;
   incrementDownloads(id: number): Promise<boolean>;
   updateAtsScore(id: number, score: number): Promise<boolean>;
-  
+
   // Session store
   sessionStore: session.Store;
 }
@@ -52,7 +60,7 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+      (user) => user.username === username
     );
   }
 
@@ -67,10 +75,13 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(
+    id: number,
+    userData: Partial<User>
+  ): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
-    
+
     const updatedUser = { ...user, ...userData };
     this.users.set(id, updatedUser);
     return updatedUser;
@@ -83,7 +94,7 @@ export class MemStorage implements IStorage {
 
   async getResumesByUserId(userId: number): Promise<Resume[]> {
     return Array.from(this.resumes.values()).filter(
-      (resume) => resume.userId === userId,
+      (resume) => resume.userId === userId
     );
   }
 
@@ -102,12 +113,15 @@ export class MemStorage implements IStorage {
     return resume;
   }
 
-  async updateResume(id: number, resumeData: Partial<Resume>): Promise<Resume | undefined> {
+  async updateResume(
+    id: number,
+    resumeData: Partial<Resume>
+  ): Promise<Resume | undefined> {
     const resume = await this.getResume(id);
     if (!resume) return undefined;
-    
-    const updatedResume = { 
-      ...resume, 
+
+    const updatedResume = {
+      ...resume,
       ...resumeData,
       lastEdited: new Date(),
     };
@@ -127,8 +141,8 @@ export class MemStorage implements IStorage {
   async incrementDownloads(id: number): Promise<boolean> {
     const resume = await this.getResume(id);
     if (!resume) return false;
-    
-    const updatedResume = { 
+
+    const updatedResume = {
       ...resume,
       downloads: (resume.downloads || 0) + 1,
     };
@@ -139,8 +153,8 @@ export class MemStorage implements IStorage {
   async updateAtsScore(id: number, score: number): Promise<boolean> {
     const resume = await this.getResume(id);
     if (!resume) return false;
-    
-    const updatedResume = { 
+
+    const updatedResume = {
       ...resume,
       atsScore: score,
     };
@@ -165,12 +179,12 @@ export class FirestoreStorage implements IStorage {
   private async initCounters() {
     try {
       // Initialize counters for auto-incrementing IDs
-      const countersRef = usersCollection.doc('counters');
+      const countersRef = usersCollection.doc("counters");
       const doc = await countersRef.get();
       if (!doc.exists) {
         await countersRef.set({
           userId: this.currentUserId,
-          resumeId: this.currentResumeId
+          resumeId: this.currentResumeId,
         });
       } else {
         const data = doc.data();
@@ -185,21 +199,26 @@ export class FirestoreStorage implements IStorage {
     }
   }
 
-  private async getNextId(counterName: 'userId' | 'resumeId'): Promise<number> {
+  private async getNextId(counterName: "userId" | "resumeId"): Promise<number> {
     try {
-      const countersRef = usersCollection.doc('counters');
-      const id = counterName === 'userId' ? this.currentUserId++ : this.currentResumeId++;
-      
+      const countersRef = usersCollection.doc("counters");
+      const id =
+        counterName === "userId"
+          ? this.currentUserId++
+          : this.currentResumeId++;
+
       // Update the counter in Firestore
       await countersRef.update({
-        [counterName]: id + 1
+        [counterName]: id + 1,
       });
-      
+
       return id;
     } catch (error) {
       console.error(`Error getting next ${counterName}:`, error);
       // Fallback to returning the current value without updating Firestore
-      return counterName === 'userId' ? this.currentUserId++ : this.currentResumeId++;
+      return counterName === "userId"
+        ? this.currentUserId++
+        : this.currentResumeId++;
     }
   }
 
@@ -207,7 +226,7 @@ export class FirestoreStorage implements IStorage {
   private docToUser(doc: FirebaseFirestore.DocumentSnapshot): User | undefined {
     const data = doc.data();
     if (!data) return undefined;
-    
+
     return {
       id: data.id,
       username: data.username,
@@ -219,10 +238,12 @@ export class FirestoreStorage implements IStorage {
   }
 
   // Convert Firestore document to Resume type
-  private docToResume(doc: FirebaseFirestore.DocumentSnapshot): Resume | undefined {
+  private docToResume(
+    doc: FirebaseFirestore.DocumentSnapshot
+  ): Resume | undefined {
     const data = doc.data();
     if (!data) return undefined;
-    
+
     return {
       id: data.id,
       userId: data.userId,
@@ -242,15 +263,18 @@ export class FirestoreStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const snapshot = await usersCollection.where('username', '==', username).limit(1).get();
+    const snapshot = await usersCollection
+      .where("username", "==", username)
+      .limit(1)
+      .get();
     if (snapshot.empty) return undefined;
     return this.docToUser(snapshot.docs[0]);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = await this.getNextId('userId');
+    const id = await this.getNextId("userId");
     const now = new Date();
-    
+
     const user: User = {
       id,
       username: insertUser.username,
@@ -264,12 +288,15 @@ export class FirestoreStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(
+    id: number,
+    userData: Partial<User>
+  ): Promise<User | undefined> {
     const userRef = usersCollection.doc(id.toString());
     const userDoc = await userRef.get();
-    
+
     if (!userDoc.exists) return undefined;
-    
+
     await userRef.update(userData);
     const updatedUserDoc = await userRef.get();
     return this.docToUser(updatedUserDoc);
@@ -283,19 +310,19 @@ export class FirestoreStorage implements IStorage {
 
   async getResumesByUserId(userId: number): Promise<Resume[]> {
     const snapshot = await resumesCollection
-      .where('userId', '==', userId)
-      .orderBy('lastEdited', 'desc')
+      .where("userId", "==", userId)
+      .orderBy("lastEdited", "desc")
       .get();
-    
+
     return snapshot.docs
-      .map(doc => this.docToResume(doc))
+      .map((doc) => this.docToResume(doc))
       .filter((resume): resume is Resume => resume !== undefined);
   }
 
   async createResume(insertResume: InsertResume): Promise<Resume> {
-    const id = await this.getNextId('resumeId');
+    const id = await this.getNextId("resumeId");
     const now = new Date();
-    
+
     const resume: Resume = {
       id,
       userId: insertResume.userId,
@@ -312,18 +339,21 @@ export class FirestoreStorage implements IStorage {
     return resume;
   }
 
-  async updateResume(id: number, resumeData: Partial<Resume>): Promise<Resume | undefined> {
+  async updateResume(
+    id: number,
+    resumeData: Partial<Resume>
+  ): Promise<Resume | undefined> {
     const resumeRef = resumesCollection.doc(id.toString());
     const resumeDoc = await resumeRef.get();
-    
+
     if (!resumeDoc.exists) return undefined;
-    
+
     // Update the lastEdited field
     const dataToUpdate = {
       ...resumeData,
-      lastEdited: new Date()
+      lastEdited: new Date(),
     };
-    
+
     await resumeRef.update(dataToUpdate);
     const updatedResumeDoc = await resumeRef.get();
     return this.docToResume(updatedResumeDoc);
@@ -332,9 +362,9 @@ export class FirestoreStorage implements IStorage {
   async deleteResume(id: number): Promise<boolean> {
     const resumeRef = resumesCollection.doc(id.toString());
     const resumeDoc = await resumeRef.get();
-    
+
     if (!resumeDoc.exists) return false;
-    
+
     await resumeRef.delete();
     return true;
   }
@@ -342,26 +372,26 @@ export class FirestoreStorage implements IStorage {
   async incrementDownloads(id: number): Promise<boolean> {
     const resumeRef = resumesCollection.doc(id.toString());
     const resumeDoc = await resumeRef.get();
-    
+
     if (!resumeDoc.exists) return false;
-    
+
     await resumeRef.update({
-      downloads: FieldValue.increment(1)
+      downloads: FieldValue.increment(1),
     });
-    
+
     return true;
   }
 
   async updateAtsScore(id: number, score: number): Promise<boolean> {
     const resumeRef = resumesCollection.doc(id.toString());
     const resumeDoc = await resumeRef.get();
-    
+
     if (!resumeDoc.exists) return false;
-    
+
     await resumeRef.update({
-      atsScore: score
+      atsScore: score,
     });
-    
+
     return true;
   }
 }

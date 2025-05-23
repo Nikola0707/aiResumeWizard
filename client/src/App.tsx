@@ -8,6 +8,7 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ResumeBuilderPage from "@/pages/resume-builder-page";
 import ResumeEditPage from "@/pages/resume-edit-page";
+import ResumesPage from "@/pages/resumes-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { FirebaseAuthProvider } from "./hooks/use-firebase-auth";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/builder" component={ResumeBuilderPage} />
       <ProtectedRoute path="/resume/:id" component={ResumeEditPage} />
+      <ProtectedRoute path="/resumes" component={ResumesPage} />
       <Route component={NotFound} />
     </Switch>
   );

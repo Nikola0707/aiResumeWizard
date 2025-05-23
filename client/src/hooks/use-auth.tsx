@@ -4,7 +4,11 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import {
+  insertUserSchema,
+  User as SelectUser,
+  InsertUser,
+} from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back, ${user.name || user.username}!`,
       });
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -63,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: "Your account has been created. Welcome!",
       });
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -75,10 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      const res = await apiRequest("POST", "/api/logout");
+      if (!res.ok) {
+        throw new Error("Failed to logout");
+      }
     },
     onSuccess: () => {
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
+      window.location.href = "/auth";
       toast({
         title: "Logged out",
         description: "You have been logged out successfully",

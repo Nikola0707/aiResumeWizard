@@ -8,11 +8,11 @@ import { FaGoogle, FaFacebook, FaApple, FaLinkedin } from "react-icons/fa";
 export default function SocialLoginButtons() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { toast } = useToast();
-  const { 
-    signInWithGoogle, 
-    signInWithFacebook, 
-    signInWithApple, 
-    signInWithLinkedIn 
+  const {
+    signInWithGoogle,
+    signInWithFacebook,
+    signInWithApple,
+    signInWithLinkedIn,
   } = useFirebaseAuth();
 
   const handleSocialLogin = async (
@@ -27,10 +27,14 @@ export default function SocialLoginButtons() {
         title: "Login successful",
         description: "You have been signed in successfully",
       });
+      window.location.href = "/";
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Failed to sign in. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to sign in. Please try again.",
         variant: "destructive",
       });
     } finally {

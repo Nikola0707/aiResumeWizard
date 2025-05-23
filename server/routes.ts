@@ -4,11 +4,12 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
 import { insertResumeSchema, resumeContent } from "@shared/schema";
-import { 
-  generateProfessionalSummary, 
-  generateExperienceBullets, 
-  analyzeResumeForATS, 
-  generateSkillSuggestions 
+import {
+  generateProfessionalSummary,
+  generateExperienceBullets,
+  analyzeResumeForATS,
+  generateSkillSuggestions,
+  generateCoverLetter,
 } from "./openai";
 
 // Middleware to check if user is authenticated
@@ -26,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Resume CRUD operations
   app.get("/api/resumes", isAuthenticated, async (req, res) => {
     try {
-      const resumes = await storage.getResumesByUserId(req.user.id);
+      const resumes = await storage.getResumesByUserId((req.user as any).id);
       res.json(resumes);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch resumes" });
@@ -37,15 +38,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const resumeId = parseInt(req.params.id);
       const resume = await storage.getResume(resumeId);
-      
+
       if (!resume) {
         return res.status(404).json({ message: "Resume not found" });
       }
-      
-      if (resume.userId !== req.user.id) {
-        return res.status(403).json({ message: "Unauthorized access to this resume" });
+
+      if (resume.userId !== (req.user as any).id) {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized access to this resume" });
       }
-      
+
       res.json(resume);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch resume" });
@@ -56,14 +59,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertResumeSchema.parse({
         ...req.body,
-        userId: req.user.id // Ensure the resume is created for the authenticated user
+        userId: (req.user as any).id,
       });
-      
+
       const resume = await storage.createResume(validatedData);
       res.status(201).json(resume);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid resume data", errors: error.errors });
+        return res
+          .status(400)
+          .json({ message: "Invalid resume data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create resume" });
     }
@@ -73,15 +78,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const resumeId = parseInt(req.params.id);
       const resume = await storage.getResume(resumeId);
-      
+
       if (!resume) {
         return res.status(404).json({ message: "Resume not found" });
       }
-      
-      if (resume.userId !== req.user.id) {
-        return res.status(403).json({ message: "Unauthorized to update this resume" });
+
+      if (resume.userId !== (req.user as any).id) {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized to update this resume" });
       }
-      
+
       const updatedResume = await storage.updateResume(resumeId, req.body);
       res.json(updatedResume);
     } catch (error) {
@@ -93,15 +100,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const resumeId = parseInt(req.params.id);
       const resume = await storage.getResume(resumeId);
-      
+
       if (!resume) {
         return res.status(404).json({ message: "Resume not found" });
       }
-      
-      if (resume.userId !== req.user.id) {
-        return res.status(403).json({ message: "Unauthorized to delete this resume" });
+
+      if (resume.userId !== (req.user as any).id) {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized to delete this resume" });
       }
-      
+
       await storage.deleteResume(resumeId);
       res.status(204).send();
     } catch (error) {
@@ -114,15 +123,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const resumeId = parseInt(req.params.id);
       const resume = await storage.getResume(resumeId);
-      
+
       if (!resume) {
         return res.status(404).json({ message: "Resume not found" });
       }
-      
-      if (resume.userId !== req.user.id) {
-        return res.status(403).json({ message: "Unauthorized access to this resume" });
+
+      if (resume.userId !== (req.user as any).id) {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized access to this resume" });
       }
-      
+
       await storage.incrementDownloads(resumeId);
       res.status(200).json({ message: "Download recorded" });
     } catch (error) {
@@ -145,7 +156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bullets = await generateExperienceBullets(req.body);
       res.json({ bullets });
     } catch (error) {
-      res.status(500).json({ message: "Failed to generate experience bullets" });
+      res
+        .status(500)
+        .json({ message: "Failed to generate experience bullets" });
     }
   });
 
@@ -153,13 +166,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { resumeText, jobDescription } = req.body;
       const analysis = await analyzeResumeForATS(resumeText, jobDescription);
-      
+
       // If resumeId is provided, update the ATS score
       if (req.body.resumeId) {
         const resumeId = parseInt(req.body.resumeId);
         await storage.updateAtsScore(resumeId, analysis.score);
       }
-      
+
       res.json(analysis);
     } catch (error) {
       res.status(500).json({ message: "Failed to analyze resume" });
@@ -173,6 +186,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ skills });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate skill suggestions" });
+    }
+  });
+
+  app.post("/api/ai/cover-letter", isAuthenticated, async (req, res) => {
+    try {
+      const coverLetter = await generateCoverLetter(req.body);
+      res.json({ coverLetter });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate cover letter" });
     }
   });
 

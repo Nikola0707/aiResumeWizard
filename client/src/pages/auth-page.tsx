@@ -8,10 +8,8 @@ import { insertUserSchema } from "@shared/schema";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Form,
@@ -23,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, FileText, CheckCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
@@ -75,22 +73,16 @@ export default function AuthPage() {
 
   // Handle login submission
   const onLogin = (values: z.infer<typeof loginSchema>) => {
+    console.log("Login values:", values);
     loginMutation.mutate(values);
   };
 
   // Handle register submission
   const onRegister = (values: z.infer<typeof registerSchema>) => {
-    // Remove confirmPassword before sending to API
+    console.log("Register values:", values);
     const { confirmPassword, ...userDataToSubmit } = values;
     registerMutation.mutate(userDataToSubmit);
   };
-
-  // Redirect to home if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
 
   // If loading, show loading state
   if (isLoading) {
@@ -108,7 +100,7 @@ export default function AuthPage() {
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
-        
+
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col items-center text-center">
             <FileText className="h-12 w-12 text-primary mb-2" />
@@ -120,18 +112,24 @@ export default function AuthPage() {
 
           <Card>
             <CardHeader>
-              <Tabs defaultValue={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
+              <Tabs
+                defaultValue={activeTab}
+                onValueChange={(v) => setActiveTab(v as "login" | "register")}
+              >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">Login</TabsTrigger>
                   <TabsTrigger value="register">Register</TabsTrigger>
                 </TabsList>
               </Tabs>
             </CardHeader>
-            
+
             <CardContent>
               {activeTab === "login" ? (
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+                <Form {...loginForm} key="login-form">
+                  <form
+                    onSubmit={loginForm.handleSubmit(onLogin)}
+                    className="space-y-4"
+                  >
                     <FormField
                       control={loginForm.control}
                       name="username"
@@ -139,13 +137,17 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="username" {...field} />
+                            <Input
+                              placeholder="username"
+                              {...field}
+                              key="login-username"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={loginForm.control}
                       name="password"
@@ -153,13 +155,17 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
+                            <Input
+                              type="password"
+                              placeholder="••••••••"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <Button
                       type="submit"
                       className="w-full"
@@ -174,7 +180,7 @@ export default function AuthPage() {
                         "Sign In"
                       )}
                     </Button>
-                    
+
                     <div className="relative my-6">
                       <div className="absolute inset-0 flex items-center">
                         <Separator className="w-full" />
@@ -190,8 +196,11 @@ export default function AuthPage() {
                   </form>
                 </Form>
               ) : (
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+                <Form {...registerForm} key="register-form">
+                  <form
+                    onSubmit={registerForm.handleSubmit(onRegister)}
+                    className="space-y-4"
+                  >
                     <FormField
                       control={registerForm.control}
                       name="username"
@@ -199,13 +208,17 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="username" {...field} />
+                            <Input
+                              placeholder="username"
+                              {...field}
+                              key="register-username"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={registerForm.control}
@@ -214,13 +227,17 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="••••••••" {...field} />
+                              <Input
+                                type="password"
+                                placeholder="••••••••"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={registerForm.control}
                         name="confirmPassword"
@@ -228,14 +245,18 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Confirm Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="••••••••" {...field} />
+                              <Input
+                                type="password"
+                                placeholder="••••••••"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="name"
@@ -243,13 +264,17 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Smith" {...field} />
+                            <Input
+                              placeholder="John Smith"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="email"
@@ -257,13 +282,18 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="john@example.com" {...field} />
+                            <Input
+                              type="email"
+                              placeholder="john@example.com"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <Button
                       type="submit"
                       className="w-full"
@@ -278,7 +308,7 @@ export default function AuthPage() {
                         "Create Account"
                       )}
                     </Button>
-                    
+
                     <div className="relative my-6">
                       <div className="absolute inset-0 flex items-center">
                         <Separator className="w-full" />
@@ -289,17 +319,19 @@ export default function AuthPage() {
                         </span>
                       </div>
                     </div>
-                    
+
                     <SocialLoginButtons />
                   </form>
                 </Form>
               )}
             </CardContent>
-            
+
             <CardFooter className="flex justify-center">
               <Button
                 variant="link"
-                onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
+                onClick={() =>
+                  setActiveTab(activeTab === "login" ? "register" : "login")
+                }
               >
                 {activeTab === "login"
                   ? "Don't have an account? Sign up"
@@ -309,51 +341,56 @@ export default function AuthPage() {
           </Card>
         </div>
       </div>
-      
+
       {/* Right side: Hero */}
       <div className="hidden lg:flex flex-col w-1/2 bg-primary-50 dark:bg-gray-800 p-12 justify-center items-center">
         <div className="max-w-md text-center">
           <h1 className="text-3xl font-bold text-primary-700 dark:text-primary-300 mb-6">
             Craft Your Perfect Resume with AI
           </h1>
-          
+
           <div className="space-y-6 text-left">
             <div className="flex items-start gap-3">
               <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold">AI-Powered Content Generation</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Let our AI write professional summaries, experience bullet points, and suggest skills tailored to your target job.
+                  Let our AI write professional summaries, experience bullet
+                  points, and suggest skills tailored to your target job.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold">ATS-Optimized Templates</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Our templates are designed to pass through Applicant Tracking Systems with ease, increasing your chances of getting an interview.
+                  Our templates are designed to pass through Applicant Tracking
+                  Systems with ease, increasing your chances of getting an
+                  interview.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold">Job-Specific Optimization</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Analyze your resume against job descriptions to get personalized recommendations and improve your match score.
+                  Analyze your resume against job descriptions to get
+                  personalized recommendations and improve your match score.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold">Multiple Export Formats</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Export your polished resume as PDF or Word document, ready to submit to potential employers.
+                  Export your polished resume as PDF or Word document, ready to
+                  submit to potential employers.
                 </p>
               </div>
             </div>

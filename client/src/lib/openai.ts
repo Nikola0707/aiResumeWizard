@@ -15,15 +15,55 @@ export interface BulletPointOptions {
   skills?: string[];
 }
 
+export interface KeywordMatch {
+  keyword: string;
+  present: boolean;
+  importance: "high" | "medium" | "low";
+  context?: string;
+}
+
+export interface IndustryAnalysis {
+  detectedIndustry: string | null;
+  industrySpecificKeywords: string[];
+  industryRecommendations: string[];
+}
+
+export interface FormatAnalysis {
+  structureScore: number;
+  readabilityScore: number;
+  formatIssues: string[];
+}
+
+export interface ContentAnalysis {
+  actionVerbs: string[];
+  quantifiableAchievements: string[];
+  missingElements: string[];
+}
+
 export interface ATSAnalysisResult {
   score: number;
   recommendations: string[];
-  keywordMatches: { keyword: string; present: boolean }[];
+  keywordMatches: KeywordMatch[];
   strengths: string[];
   weaknesses: string[];
+  industryAnalysis: IndustryAnalysis;
+  formatAnalysis: FormatAnalysis;
+  contentAnalysis: ContentAnalysis;
 }
 
-export async function generateProfessionalSummary(options: SummaryOptions): Promise<string> {
+export interface CoverLetterOptions {
+  resumeText: string;
+  jobDescription: string;
+  companyName: string;
+  tone?: "professional" | "enthusiastic" | "formal" | "conversational";
+  highlightSkills?: string[];
+  highlightExperience?: string[];
+  customInstructions?: string;
+}
+
+export async function generateProfessionalSummary(
+  options: SummaryOptions
+): Promise<string> {
   try {
     const response = await apiRequest("POST", "/api/ai/summary", options);
     const data = await response.json();
@@ -34,7 +74,9 @@ export async function generateProfessionalSummary(options: SummaryOptions): Prom
   }
 }
 
-export async function generateExperienceBullets(options: BulletPointOptions): Promise<string[]> {
+export async function generateExperienceBullets(
+  options: BulletPointOptions
+): Promise<string[]> {
   try {
     const response = await apiRequest("POST", "/api/ai/bullets", options);
     const data = await response.json();
@@ -46,7 +88,7 @@ export async function generateExperienceBullets(options: BulletPointOptions): Pr
 }
 
 export async function analyzeResumeForATS(
-  resumeText: string, 
+  resumeText: string,
   jobDescription?: string,
   resumeId?: number
 ): Promise<ATSAnalysisResult> {
@@ -54,9 +96,9 @@ export async function analyzeResumeForATS(
     const response = await apiRequest("POST", "/api/ai/analyze", {
       resumeText,
       jobDescription,
-      resumeId
+      resumeId,
     });
-    
+
     return await response.json();
   } catch (error) {
     console.error("Error analyzing resume for ATS:", error);
@@ -65,19 +107,32 @@ export async function analyzeResumeForATS(
 }
 
 export async function generateSkillSuggestions(
-  jobTitle: string, 
+  jobTitle: string,
   jobDescription?: string
 ): Promise<string[]> {
   try {
     const response = await apiRequest("POST", "/api/ai/skills", {
       jobTitle,
-      jobDescription
+      jobDescription,
     });
-    
+
     const data = await response.json();
     return data.skills;
   } catch (error) {
     console.error("Error generating skill suggestions:", error);
     throw new Error("Failed to generate skill suggestions");
+  }
+}
+
+export async function generateCoverLetter(
+  options: CoverLetterOptions
+): Promise<string> {
+  try {
+    const response = await apiRequest("POST", "/api/ai/cover-letter", options);
+    const data = await response.json();
+    return data.coverLetter;
+  } catch (error) {
+    console.error("Error generating cover letter:", error);
+    throw new Error("Failed to generate cover letter");
   }
 }

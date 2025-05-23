@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { ResumeContent, personalInfo } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -25,42 +24,51 @@ interface PersonalInfoFormProps {
   onUpdate: (data: Partial<ResumeContent>) => void;
 }
 
-export default function PersonalInfoForm({ data, onUpdate }: PersonalInfoFormProps) {
+export default function PersonalInfoForm({
+  data,
+  onUpdate,
+}: PersonalInfoFormProps) {
   const { toast } = useToast();
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  
+
   const form = useForm({
     resolver: zodResolver(personalInfo),
     defaultValues: data.personalInfo,
   });
-  
+
+  useEffect(() => {
+    form.reset(data.personalInfo);
+  }, [data.personalInfo, form]);
+
   const handleSubmit = (values: any) => {
     onUpdate({ personalInfo: values });
   };
-  
+
   const handleGenerateSummary = async () => {
     try {
       setIsGeneratingSummary(true);
-      
+
       const professionalTitle = form.getValues("professionalTitle");
       if (!professionalTitle) {
         toast({
           title: "Professional title required",
-          description: "Please enter your professional title to generate a summary",
+          description:
+            "Please enter your professional title to generate a summary",
           variant: "destructive",
         });
         return;
       }
-      
+
       const summary = await generateProfessionalSummary({
-        professionalTitle
+        professionalTitle,
       });
-      
+
       form.setValue("summary", summary);
-      
+
       toast({
         title: "Summary generated",
-        description: "AI has created a professional summary for you. Feel free to edit it!",
+        description:
+          "AI has created a professional summary for you. Feel free to edit it!",
       });
     } catch (error) {
       toast({
@@ -72,23 +80,24 @@ export default function PersonalInfoForm({ data, onUpdate }: PersonalInfoFormPro
       setIsGeneratingSummary(false);
     }
   };
-  
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" onChange={form.handleSubmit(handleSubmit)}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Alert className="bg-primary-50 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border-primary-200 dark:border-primary-800">
           <Wand2 className="h-4 w-4" />
           <AlertDescription>
-            Your personal section establishes your professional identity. Be sure to include a professional email and LinkedIn URL.
+            Your personal section establishes your professional identity. Be
+            sure to include a professional email and LinkedIn URL.
           </AlertDescription>
         </Alert>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="fullName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key="fullName">
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. John Smith" {...field} />
@@ -97,40 +106,47 @@ export default function PersonalInfoForm({ data, onUpdate }: PersonalInfoFormPro
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="professionalTitle"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key="professionalTitle">
                 <FormLabel>Professional Title</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. Senior Software Engineer" {...field} />
+                  <Input
+                    placeholder="e.g. Senior Software Engineer"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key="email">
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="e.g. john.smith@example.com" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="e.g. john.smith@example.com"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="phone"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key="phone">
                 <FormLabel>Phone</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. (555) 123-4567" {...field} />
@@ -139,12 +155,12 @@ export default function PersonalInfoForm({ data, onUpdate }: PersonalInfoFormPro
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="location"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key="location">
                 <FormLabel>Location</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. San Francisco, CA" {...field} />
@@ -153,34 +169,37 @@ export default function PersonalInfoForm({ data, onUpdate }: PersonalInfoFormPro
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="website"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key="website">
                 <FormLabel>Website/LinkedIn</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. linkedin.com/in/johnsmith" {...field} />
+                  <Input
+                    placeholder="e.g. linkedin.com/in/johnsmith"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           <div className="md:col-span-2">
             <div className="flex justify-between items-center">
               <FormField
                 control={form.control}
                 name="summary"
                 render={({ field }) => (
-                  <FormItem className="w-full">
+                  <FormItem key="summary" className="w-full">
                     <FormLabel>Professional Summary</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Write a brief summary of your professional background and key qualifications..." 
+                      <Textarea
+                        placeholder="Write a brief summary of your professional background and key qualifications..."
                         className="h-32"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -210,6 +229,10 @@ export default function PersonalInfoForm({ data, onUpdate }: PersonalInfoFormPro
             </Button>
           </div>
         </div>
+
+        <Button type="submit" className="w-full">
+          Save Personal Info
+        </Button>
       </form>
     </Form>
   );

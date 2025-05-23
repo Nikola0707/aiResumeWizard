@@ -1,4 +1,14 @@
-import { pgTable, text, serial, integer, boolean, json, timestamp, primaryKey, foreignKey } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  json,
+  timestamp,
+  primaryKey,
+  foreignKey,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -13,16 +23,18 @@ export const users = pgTable("users", {
 });
 
 export const resumeTemplate = z.enum([
-  "modern", 
-  "professional", 
-  "creative", 
-  "simple", 
-  "elegant"
+  "modern",
+  "professional",
+  "creative",
+  "simple",
+  "elegant",
 ]);
 
 export const resumes = pgTable("resumes", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   template: text("template").notNull(),
   content: json("content").notNull(),
@@ -34,14 +46,14 @@ export const resumes = pgTable("resumes", {
 
 // Define relations after both tables are declared
 export const usersRelations = relations(users, ({ many }) => ({
-  resumes: many(resumes)
+  resumes: many(resumes),
 }));
 
 export const resumesRelations = relations(resumes, ({ one }) => ({
   user: one(users, {
     fields: [resumes.userId],
-    references: [users.id]
-  })
+    references: [users.id],
+  }),
 }));
 
 export const personalInfo = z.object({
@@ -82,6 +94,7 @@ export const skillItem = z.object({
   id: z.string(),
   name: z.string(),
   level: z.number().min(1).max(5).optional(),
+  category: z.string().optional(),
 });
 
 export const resumeContent = z.object({

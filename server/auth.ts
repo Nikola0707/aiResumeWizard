@@ -30,39 +30,43 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Handler for social login/registration using Firebase
-async function handleFirebaseAuth(req: Request, res: Response, next: NextFunction) {
+async function handleFirebaseAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const { idToken } = req.body;
-    
+
     if (!idToken) {
       return res.status(400).json({ message: "Firebase ID token is required" });
     }
-    
+
     // Verify the ID token with Firebase Admin
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const { uid, email, name, picture } = decodedToken;
-    
+
     // Check if user already exists
     let user = await storage.getUserByUsername(uid);
-    
+
     if (!user) {
       // Create new user if doesn't exist
       // Generate a random password as social login users won't use it
-      const randomPassword = randomBytes(16).toString('hex');
+      const randomPassword = randomBytes(16).toString("hex");
       const hashedPassword = await hashPassword(randomPassword);
-      
+
       user = await storage.createUser({
         username: uid,
         password: hashedPassword,
         email: email || `${uid}@firebase.com`, // Email may not always be available
-        name: name || 'Firebase User'
+        name: name || "Firebase User",
       });
     }
-    
+
     // Log in the user
     req.login(user, (err) => {
       if (err) return next(err);
-      
+
       // Don't send the password back
       const { password, ...userWithoutPassword } = user;
       return res.status(200).json(userWithoutPassword);
@@ -74,8 +78,9 @@ async function handleFirebaseAuth(req: Request, res: Response, next: NextFunctio
 }
 
 export function setupAuth(app: Express) {
-  const sessionSecret = process.env.SESSION_SECRET || 'resume-builder-secret-key';
-  
+  const sessionSecret =
+    process.env.SESSION_SECRET || "resume-builder-secret-key";
+
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
     resave: false,
@@ -83,8 +88,10 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-      secure: process.env.NODE_ENV === 'production',
-    }
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax",
+    },
   };
 
   app.set("trust proxy", 1);
@@ -104,7 +111,7 @@ export function setupAuth(app: Express) {
       } catch (error) {
         return done(error);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
@@ -142,33 +149,64 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: "Invalid credentials" });
-      
-      req.login(user, (err) => {
+    passport.authenticate(
+      "local",
+      (
+        err: Error | null,
+        user: SelectUser | false,
+        info: { message: string }
+      ) => {
         if (err) return next(err);
-        
-        // Don't send the password back
-        const { password, ...userWithoutPassword } = user;
-        return res.status(200).json(userWithoutPassword);
-      });
-    })(req, res, next);
+        if (!user)
+          return res.status(401).json({ message: "Invalid credentials" });
+
+        req.login(user, (err) => {
+          if (err) return next(err);
+
+          // Don't send the password back
+          const { password, ...userWithoutPassword } = user;
+          return res.status(200).json(userWithoutPassword);
+        });
+      }
+    )(req, res, next);
   });
 
   // Firebase authentication endpoint
   app.post("/api/auth/firebase", handleFirebaseAuth);
 
   app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
+    // First logout from passport
+    req.logout(() => {
+      // Then destroy the session
+      req.session.destroy((err) => {
+        if (err) return next(err);
+
+        // Clear the session cookie with proper options
+        res.clearCookie("connect.sid", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          domain:
+            process.env.NODE_ENV === "production" ? undefined : "localhost",
+        });
+
+        // Set cache control headers
+        res.set({
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        });
+
+        res.status(200).json({ message: "Logged out successfully" });
+      });
     });
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     // Don't send the password back
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);

@@ -2,12 +2,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import Layout from "@/components/layout/layout";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -26,23 +21,20 @@ import SkillsForm from "@/components/resume-builder/skills-form";
 import TemplateSelector from "@/components/resume-builder/template-selector";
 import ResumePreview from "@/components/resume-builder/resume-preview";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  ResumeContent, 
-  resumeContent 
-} from "@shared/schema";
-import { 
+import { ResumeContent, resumeContent } from "@shared/schema";
+import {
   createEmptyResumeContent,
-  convertResumeToText 
+  convertResumeToText,
 } from "@/lib/resume-data";
-import { 
-  Save, 
-  Eye, 
-  Download, 
-  FileEdit, 
-  Trash2, 
-  ArrowLeft, 
-  Loader2, 
-  RotateCcw
+import {
+  Save,
+  Eye,
+  Download,
+  FileEdit,
+  Trash2,
+  ArrowLeft,
+  Loader2,
+  RotateCcw,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -62,21 +54,23 @@ export default function ResumeEditPage() {
   const resumeId = params?.id ? parseInt(params.id) : null;
   const { toast } = useToast();
   const [_, navigate] = useLocation();
-  
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [resumeTitle, setResumeTitle] = useState("");
-  const [resumeData, setResumeData] = useState<ResumeContent>(createEmptyResumeContent());
+  const [resumeData, setResumeData] = useState<ResumeContent>(
+    createEmptyResumeContent()
+  );
   const [template, setTemplate] = useState("modern");
   const [activeTab, setActiveTab] = useState("edit");
   const [editSection, setEditSection] = useState("personal-info");
-  
+
   // Fetch resume data
   const { data: resume, isLoading } = useQuery({
     queryKey: [`/api/resumes/${resumeId}`],
     enabled: resumeId !== null,
   });
-  
+
   // Initialize form data when resume loads
   useEffect(() => {
     if (resume) {
@@ -85,22 +79,22 @@ export default function ResumeEditPage() {
       setResumeData(resume.content as ResumeContent);
     }
   }, [resume]);
-  
+
   // Update resume mutation
   const updateResumeMutation = useMutation({
     mutationFn: async () => {
       if (!resumeId) throw new Error("Resume ID is required");
-      
+
       try {
         // Validate data with zod
         const validatedData = resumeContent.parse(resumeData);
-        
+
         const res = await apiRequest("PUT", `/api/resumes/${resumeId}`, {
           title: resumeTitle,
           template,
-          content: validatedData
+          content: validatedData,
         });
-        
+
         return await res.json();
       } catch (error) {
         throw new Error("Invalid resume data");
@@ -120,9 +114,9 @@ export default function ResumeEditPage() {
         description: `Failed to update resume: ${error.message}`,
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   // Delete resume mutation
   const deleteResumeMutation = useMutation({
     mutationFn: async () => {
@@ -143,46 +137,46 @@ export default function ResumeEditPage() {
         variant: "destructive",
       });
       setIsDeleting(false);
-    }
+    },
   });
-  
+
   // Handle form updates
   const handleUpdate = (data: Partial<ResumeContent>) => {
     setResumeData({ ...resumeData, ...data });
   };
-  
+
   // Save changes
   const handleSave = () => {
     updateResumeMutation.mutate();
   };
-  
+
   // Navigate back to dashboard
   const handleBack = () => {
     navigate("/");
   };
-  
+
   // Delete resume
   const handleDelete = () => {
     setIsDeleting(true);
     deleteResumeMutation.mutate();
   };
-  
+
   // Download PDF
   const handleDownload = async () => {
     if (!resume) return;
-    
+
     try {
       setIsDownloading(true);
       const pdfDataUri = await generateResumePDF(resume);
-      
+
       // Create a link and trigger download
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = pdfDataUri;
-      link.download = `${resumeTitle || 'Resume'}.pdf`;
+      link.download = `${resumeTitle || "Resume"}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast({
         title: "Download successful",
         description: "Your resume has been downloaded as a PDF",
@@ -197,7 +191,7 @@ export default function ResumeEditPage() {
       setIsDownloading(false);
     }
   };
-  
+
   // Loading state
   if (isLoading) {
     return (
@@ -208,7 +202,7 @@ export default function ResumeEditPage() {
       </Layout>
     );
   }
-  
+
   // If resume is not found
   if (!resume && !isLoading) {
     return (
@@ -216,7 +210,8 @@ export default function ResumeEditPage() {
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold mb-4">Resume Not Found</h1>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
-            The resume you're looking for might have been deleted or doesn't exist.
+            The resume you're looking for might have been deleted or doesn't
+            exist.
           </p>
           <Button onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -226,7 +221,7 @@ export default function ResumeEditPage() {
       </Layout>
     );
   }
-  
+
   return (
     <Layout>
       <div className="mb-6 flex flex-col md:flex-row justify-between items-start gap-4">
@@ -242,17 +237,17 @@ export default function ResumeEditPage() {
             Update your resume details and preview changes
           </p>
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           <div className="flex-1 min-w-[200px]">
-            <Input 
-              placeholder="Resume Title" 
+            <Input
+              placeholder="Resume Title"
               value={resumeTitle}
               onChange={(e) => setResumeTitle(e.target.value)}
               className="w-full"
             />
           </div>
-          
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="icon">
@@ -263,13 +258,13 @@ export default function ResumeEditPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your
-                  resume and all associated data.
+                  This action cannot be undone. This will permanently delete
+                  your resume and all associated data.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
+                <AlertDialogAction
                   onClick={handleDelete}
                   className="bg-red-500 text-white hover:bg-red-600"
                   disabled={isDeleting}
@@ -286,9 +281,9 @@ export default function ResumeEditPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
-          <Button 
-            variant="outline" 
+
+          <Button
+            variant="outline"
             onClick={handleDownload}
             disabled={isDownloading}
           >
@@ -304,8 +299,8 @@ export default function ResumeEditPage() {
               </>
             )}
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleSave}
             disabled={updateResumeMutation.isPending}
           >
@@ -323,7 +318,7 @@ export default function ResumeEditPage() {
           </Button>
         </div>
       </div>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="edit">
@@ -335,7 +330,7 @@ export default function ResumeEditPage() {
             Preview
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="edit">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card className="md:col-span-1">
@@ -345,21 +340,27 @@ export default function ResumeEditPage() {
               <CardContent className="px-2">
                 <div className="space-y-1">
                   <Button
-                    variant={editSection === "personal-info" ? "secondary" : "ghost"}
+                    variant={
+                      editSection === "personal-info" ? "secondary" : "ghost"
+                    }
                     className="w-full justify-start"
                     onClick={() => setEditSection("personal-info")}
                   >
                     Personal Information
                   </Button>
                   <Button
-                    variant={editSection === "experience" ? "secondary" : "ghost"}
+                    variant={
+                      editSection === "experience" ? "secondary" : "ghost"
+                    }
                     className="w-full justify-start"
                     onClick={() => setEditSection("experience")}
                   >
                     Work Experience
                   </Button>
                   <Button
-                    variant={editSection === "education" ? "secondary" : "ghost"}
+                    variant={
+                      editSection === "education" ? "secondary" : "ghost"
+                    }
                     className="w-full justify-start"
                     onClick={() => setEditSection("education")}
                   >
@@ -382,7 +383,7 @@ export default function ResumeEditPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <div className="md:col-span-3">
               <Suspense
                 fallback={
@@ -392,49 +393,34 @@ export default function ResumeEditPage() {
                 }
               >
                 {editSection === "personal-info" && (
-                  <PersonalInfoForm 
-                    data={resumeData} 
-                    onUpdate={handleUpdate} 
-                  />
+                  <PersonalInfoForm data={resumeData} onUpdate={handleUpdate} />
                 )}
-                
+
                 {editSection === "experience" && (
-                  <ExperienceForm 
-                    data={resumeData} 
-                    onUpdate={handleUpdate} 
-                  />
+                  <ExperienceForm data={resumeData} onUpdate={handleUpdate} />
                 )}
-                
+
                 {editSection === "education" && (
-                  <EducationForm 
-                    data={resumeData} 
-                    onUpdate={handleUpdate} 
-                  />
+                  <EducationForm data={resumeData} onUpdate={handleUpdate} />
                 )}
-                
+
                 {editSection === "skills" && (
-                  <SkillsForm 
-                    data={resumeData} 
-                    onUpdate={handleUpdate} 
-                  />
+                  <SkillsForm data={resumeData} onUpdate={handleUpdate} />
                 )}
-                
+
                 {editSection === "template" && (
-                  <TemplateSelector 
-                    selectedTemplate={template} 
-                    onSelectTemplate={setTemplate} 
+                  <TemplateSelector
+                    selectedTemplate={template}
+                    onSelectTemplate={setTemplate}
                   />
                 )}
               </Suspense>
             </div>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="preview">
-          <ResumePreview 
-            resumeData={resumeData}
-            template={template}
-          />
+          <ResumePreview resumeData={resumeData} template={template} />
         </TabsContent>
       </Tabs>
     </Layout>
