@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ResumeContent, personalInfo } from "@shared/schema";
+import { ResumeContent, personalInfo, type PersonalInfo } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
@@ -24,6 +24,16 @@ interface PersonalInfoFormProps {
   onUpdate: (data: Partial<ResumeContent>) => void;
 }
 
+type FormData = {
+  fullName: string;
+  professionalTitle: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  website?: string;
+  summary?: string;
+};
+
 export default function PersonalInfoForm({
   data,
   onUpdate,
@@ -32,17 +42,38 @@ export default function PersonalInfoForm({
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(personalInfo),
-    defaultValues: data.personalInfo,
-  });
+    mode: "onChange",
+    defaultValues: {
+      fullName: data.personalInfo?.fullName ?? "",
+      professionalTitle: data.personalInfo?.professionalTitle ?? "",
+      email: data.personalInfo?.email ?? "",
+      phone: data.personalInfo?.phone ?? "",
+      location: data.personalInfo?.location ?? "",
+      website: data.personalInfo?.website ?? "",
+      summary: data.personalInfo?.summary ?? "",
+    },
+  } as const);
 
   useEffect(() => {
     form.reset(data.personalInfo);
   }, [data.personalInfo, form]);
 
-  const handleSubmit = (values: any) => {
-    onUpdate({ personalInfo: values });
-  };
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      onUpdate({
+        personalInfo: {
+          fullName: value.fullName || "",
+          professionalTitle: value.professionalTitle || "",
+          email: value.email,
+          phone: value.phone,
+          location: value.location,
+          website: value.website,
+          summary: value.summary,
+        },
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onUpdate]);
 
   const handleGenerateSummary = async () => {
     try {
@@ -64,6 +95,7 @@ export default function PersonalInfoForm({
       });
 
       form.setValue("summary", summary);
+      onUpdate({ personalInfo: { ...form.getValues(), summary } });
 
       toast({
         title: "Summary generated",
@@ -83,7 +115,7 @@ export default function PersonalInfoForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form className="space-y-6">
         <Alert className="bg-primary-50 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border-primary-200 dark:border-primary-800">
           <Wand2 className="h-4 w-4" />
           <AlertDescription>
@@ -229,10 +261,6 @@ export default function PersonalInfoForm({
             </Button>
           </div>
         </div>
-
-        <Button type="submit" className="w-full">
-          Save Personal Info
-        </Button>
       </form>
     </Form>
   );

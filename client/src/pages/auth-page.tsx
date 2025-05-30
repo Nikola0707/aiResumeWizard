@@ -27,23 +27,38 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import SocialLoginButtons from "@/components/auth/social-login-buttons";
 
-// Extend the user schema for login
-const loginSchema = insertUserSchema.pick({
-  username: true,
-  password: true,
+// Define base schemas
+const loginSchema = z.object({
+  username: z.string(),
+  password: z.string(),
 });
 
-// Extend the user schema for registration with password confirmation
-const registerSchema = insertUserSchema
-  .extend({
-    confirmPassword: z.string().min(6, {
-      message: "Password must be at least 6 characters",
-    }),
+const registerSchema = z
+  .object({
+    username: z.string(),
+    password: z.string().min(6),
+    confirmPassword: z.string().min(6),
+    name: z.string(),
+    email: z.string().email(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
+
+// Define explicit types for form data
+type LoginFormData = {
+  username: string;
+  password: string;
+};
+
+type RegisterFormData = {
+  username: string;
+  password: string;
+  confirmPassword: string;
+  name: string;
+  email: string;
+};
 
 export default function AuthPage() {
   const [_, navigate] = useLocation();
@@ -51,8 +66,7 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
 
   // Set up login form
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const loginForm = useForm<LoginFormData>({
     defaultValues: {
       username: "",
       password: "",
@@ -60,8 +74,7 @@ export default function AuthPage() {
   });
 
   // Set up register form
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+  const registerForm = useForm<RegisterFormData>({
     defaultValues: {
       username: "",
       password: "",
@@ -72,16 +85,14 @@ export default function AuthPage() {
   });
 
   // Handle login submission
-  const onLogin = (values: z.infer<typeof loginSchema>) => {
-    console.log("Login values:", values);
-    loginMutation.mutate(values);
+  const onLogin = (values: LoginFormData) => {
+    loginMutation.mutate(values as any);
   };
 
   // Handle register submission
-  const onRegister = (values: z.infer<typeof registerSchema>) => {
-    console.log("Register values:", values);
+  const onRegister = (values: RegisterFormData) => {
     const { confirmPassword, ...userDataToSubmit } = values;
-    registerMutation.mutate(userDataToSubmit);
+    registerMutation.mutate(userDataToSubmit as any);
   };
 
   // If loading, show loading state

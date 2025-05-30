@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { v4 as uuidv4 } from "uuid";
 import { ExperienceItem, ResumeContent, experienceItem } from "@shared/schema";
@@ -30,46 +30,54 @@ interface ExperienceFormProps {
   onUpdate: (data: Partial<ResumeContent>) => void;
 }
 
-export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) {
+export default function ExperienceForm({
+  data,
+  onUpdate,
+}: ExperienceFormProps) {
   const { toast } = useToast();
   const [experiences, setExperiences] = useState<ExperienceItem[]>(
-    data.experience && data.experience.length > 0 
-      ? data.experience 
+    data.experience && data.experience.length > 0
+      ? data.experience
       : [createEmptyExperienceItem()]
   );
   const [activeIndex, setActiveIndex] = useState(0);
-  const [generatingBullets, setGeneratingBullets] = useState<string | null>(null);
+  const [generatingBullets, setGeneratingBullets] = useState<string | null>(
+    null
+  );
 
   // Set up the active experience form
   const form = useForm({
     resolver: zodResolver(experienceItem),
     defaultValues: experiences[activeIndex] || createEmptyExperienceItem(),
   });
-  
+
   // Watch current checkbox to show/hide end date
   const currentJob = form.watch("current");
 
-  // Update data when form changes
-  const updateExperience = (values: ExperienceItem) => {
-    const updatedExperiences = [...experiences];
-    updatedExperiences[activeIndex] = values;
-    setExperiences(updatedExperiences);
-    onUpdate({ experience: updatedExperiences });
-  };
+  // Update form when active experience changes
+  useEffect(() => {
+    form.reset(experiences[activeIndex] || createEmptyExperienceItem());
+  }, [activeIndex, experiences, form]);
+
+  // Update parent state on form changes
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      const updatedExperiences = [...experiences];
+      updatedExperiences[activeIndex] = value as ExperienceItem;
+      setExperiences(updatedExperiences);
+      onUpdate({ experience: updatedExperiences });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, experiences, activeIndex, onUpdate]);
 
   // Add a new experience
   const addExperience = () => {
-    // First save the current form
-    form.handleSubmit((values) => {
-      const updatedExperiences = [...experiences];
-      updatedExperiences[activeIndex] = values;
-      const newExperience = createEmptyExperienceItem();
-      updatedExperiences.push(newExperience);
-      setExperiences(updatedExperiences);
-      onUpdate({ experience: updatedExperiences });
-      setActiveIndex(updatedExperiences.length - 1);
-      form.reset(newExperience);
-    })();
+    const newExperience = createEmptyExperienceItem();
+    const updatedExperiences = [...experiences, newExperience];
+    setExperiences(updatedExperiences);
+    onUpdate({ experience: updatedExperiences });
+    setActiveIndex(updatedExperiences.length - 1);
+    form.reset(newExperience);
   };
 
   // Remove an experience
@@ -87,7 +95,7 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
     updatedExperiences.splice(index, 1);
     setExperiences(updatedExperiences);
     onUpdate({ experience: updatedExperiences });
-    
+
     // If we're removing the active item, select the one before it
     if (index === activeIndex) {
       const newIndex = Math.max(0, index - 1);
@@ -101,169 +109,103 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
 
   // Select an experience to edit
   const selectExperience = (index: number) => {
-    // First save the current form
-    form.handleSubmit((values) => {
-      const updatedExperiences = [...experiences];
-      updatedExperiences[activeIndex] = values;
-      setExperiences(updatedExperiences);
-      onUpdate({ experience: updatedExperiences });
-      setActiveIndex(index);
-      form.reset(updatedExperiences[index]);
-    })();
+    setActiveIndex(index);
+    form.reset(experiences[index]);
   };
 
-  // Generate bullet points with AI
-  const handleGenerateBullets = async () => {
-    try {
-      const id = form.getValues("id");
-      setGeneratingBullets(id);
-      
+  // Generate bullet points using AI
+  const generateBulletsMutation = useMutation({
+    mutationFn: async () => {
       const jobTitle = form.getValues("title");
       const company = form.getValues("company");
-      const description = form.getValues("description") || "";
-      
+
       if (!jobTitle || !company) {
-        toast({
-          title: "Missing information",
-          description: "Please provide a job title and company to generate bullet points",
-          variant: "destructive",
-        });
-        setGeneratingBullets(null);
-        return;
+        throw new Error("Job title and company are required");
       }
-      
+
       const bullets = await generateExperienceBullets({
         jobTitle,
-        jobDescription: `${description} at ${company}`,
+        company,
       });
-      
-      // Update the form with the generated bullet points
-      const currentHighlights = form.getValues("highlights") || [];
-      const updatedHighlights = [...currentHighlights, ...bullets];
-      
-      form.setValue("highlights", updatedHighlights);
-      
-      // Also update the experiences array
-      const updatedValues = { ...form.getValues(), highlights: updatedHighlights };
-      updateExperience(updatedValues);
-      
+
+      return bullets;
+    },
+    onSuccess: (bullets) => {
+      form.setValue("highlights", bullets);
+      const updatedExperiences = [...experiences];
+      updatedExperiences[activeIndex] = {
+        ...updatedExperiences[activeIndex],
+        highlights: bullets,
+      };
+      setExperiences(updatedExperiences);
+      onUpdate({ experience: updatedExperiences });
+
       toast({
         title: "Bullet points generated",
-        description: "AI has created bullet points for your experience. Feel free to edit them!",
+        description:
+          "AI has created bullet points for your experience. Feel free to edit them!",
       });
-    } catch (error) {
+    },
+    onError: (error) => {
       toast({
-        title: "Failed to generate bullet points",
-        description: "An error occurred while generating bullet points. Please try again.",
+        title: "Error",
+        description:
+          error.message ||
+          "Failed to generate bullet points. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setGeneratingBullets(null);
-    }
-  };
-
-  // Handlers for bullet point items
-  const addBulletPoint = () => {
-    const currentHighlights = form.getValues("highlights") || [];
-    const updatedHighlights = [...currentHighlights, ""];
-    form.setValue("highlights", updatedHighlights);
-    
-    // Also update the experiences array
-    const updatedValues = { ...form.getValues(), highlights: updatedHighlights };
-    updateExperience(updatedValues);
-  };
-
-  const updateBulletPoint = (index: number, value: string) => {
-    const currentHighlights = form.getValues("highlights") || [];
-    const updatedHighlights = [...currentHighlights];
-    updatedHighlights[index] = value;
-    form.setValue("highlights", updatedHighlights);
-    
-    // Also update the experiences array
-    const updatedValues = { ...form.getValues(), highlights: updatedHighlights };
-    updateExperience(updatedValues);
-  };
-
-  const removeBulletPoint = (index: number) => {
-    const currentHighlights = form.getValues("highlights") || [];
-    const updatedHighlights = currentHighlights.filter((_, i) => i !== index);
-    form.setValue("highlights", updatedHighlights);
-    
-    // Also update the experiences array
-    const updatedValues = { ...form.getValues(), highlights: updatedHighlights };
-    updateExperience(updatedValues);
-  };
+    },
+  });
 
   return (
     <div className="space-y-6">
       <Alert className="bg-primary-50 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border-primary-200 dark:border-primary-800">
         <Wand2 className="h-4 w-4" />
         <AlertDescription>
-          A strong work experience section should showcase your achievements with measurable results. Use action verbs and quantify your impact where possible.
+          List your work experience in reverse chronological order. Focus on
+          achievements and responsibilities that demonstrate your skills.
         </AlertDescription>
       </Alert>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Left side - Experience list */}
-        <div className="md:col-span-1">
-          <h3 className="text-sm font-medium mb-3">Work Experience</h3>
-          <div className="space-y-2">
-            {experiences.map((exp, index) => (
-              <div 
-                key={exp.id} 
-                className={`
-                  p-3 rounded-md cursor-pointer border
-                  ${index === activeIndex 
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-950 dark:border-primary-500' 
-                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'}
-                `}
-                onClick={() => selectExperience(index)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="w-full overflow-hidden">
-                    <p className="font-medium truncate">
-                      {exp.title || "Position Title"}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {exp.company || "Company Name"}
-                    </p>
-                  </div>
+        <Card className="md:col-span-1">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              {experiences.map((exp, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Button
+                    variant={activeIndex === index ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => selectExperience(index)}
+                  >
+                    {exp.title || "Untitled Position"}
+                  </Button>
                   {experiences.length > 1 && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-gray-500 hover:text-red-500"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeExperience(index);
-                      }}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeExperience(index)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
-              </div>
-            ))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full mt-2" 
-              size="sm"
-              onClick={addExperience}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Work Experience
-            </Button>
-          </div>
-        </div>
-        
-        {/* Right side - Edit form */}
+              ))}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={addExperience}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Experience
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="md:col-span-3">
           <Form {...form}>
-            <form 
-              className="space-y-4" 
-              onChange={form.handleSubmit(updateExperience)}
-            >
+            <form className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -272,13 +214,16 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                     <FormItem>
                       <FormLabel>Job Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Senior Software Engineer" {...field} />
+                        <Input
+                          placeholder="e.g. Senior Software Engineer"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="company"
@@ -292,7 +237,7 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="location"
@@ -300,13 +245,16 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                     <FormItem>
                       <FormLabel>Location</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. San Francisco, CA" {...field} />
+                        <Input
+                          placeholder="e.g. San Francisco, CA"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex items-end gap-4">
                   <FormField
                     control={form.control}
@@ -324,7 +272,7 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                     )}
                   />
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="startDate"
@@ -338,7 +286,7 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                     </FormItem>
                   )}
                 />
-                
+
                 {!currentJob && (
                   <FormField
                     control={form.control}
@@ -355,36 +303,18 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                   />
                 )}
               </div>
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Briefly describe your role and responsibilities..."
-                        className="h-24"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <FormLabel>Key Achievements</FormLabel>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Key Achievements</h3>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={handleGenerateBullets}
-                    disabled={generatingBullets === form.getValues("id")}
+                    onClick={() => generateBulletsMutation.mutate()}
+                    disabled={generateBulletsMutation.isPending}
                   >
-                    {generatingBullets === form.getValues("id") ? (
+                    {generateBulletsMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Generating...
@@ -392,54 +322,28 @@ export default function ExperienceForm({ data, onUpdate }: ExperienceFormProps) 
                     ) : (
                       <>
                         <Wand2 className="mr-2 h-4 w-4" />
-                        Generate Bullet Points
+                        Generate with AI
                       </>
                     )}
                   </Button>
                 </div>
-                
-                <Card>
-                  <CardContent className="p-4 space-y-3">
-                    {form.watch("highlights")?.map((highlight, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <span className="mt-2.5">•</span>
-                        <Input
-                          value={highlight}
-                          onChange={(e) => updateBulletPoint(idx, e.target.value)}
-                          placeholder="Describe a specific achievement or responsibility"
-                          className="flex-1"
+
+                <FormField
+                  control={form.control}
+                  name="highlights"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          placeholder="List your key achievements and responsibilities..."
+                          className="h-32"
+                          {...field}
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9"
-                          onClick={() => removeBulletPoint(idx)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    
-                    {(!form.watch("highlights") || form.watch("highlights").length === 0) && (
-                      <div className="text-center py-2 text-gray-500 dark:text-gray-400">
-                        <p>No bullet points added yet</p>
-                        <p className="text-sm">Add bullet points manually or generate with AI</p>
-                      </div>
-                    )}
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full mt-2"
-                      size="sm"
-                      onClick={addBulletPoint}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Bullet Point
-                    </Button>
-                  </CardContent>
-                </Card>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </form>
           </Form>

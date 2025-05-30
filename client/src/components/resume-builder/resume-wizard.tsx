@@ -105,36 +105,23 @@ export default function ResumeWizard() {
     createResumeMutation.mutate();
   };
 
+  const handleUpdate = (newData: Partial<ResumeContent>) => {
+    setResumeData((prevData) => ({
+      ...prevData,
+      ...newData,
+    }));
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case "personal-info":
-        return (
-          <PersonalInfoForm
-            data={resumeData}
-            onUpdate={(newData) => setResumeData({ ...resumeData, ...newData })}
-          />
-        );
+        return <PersonalInfoForm data={resumeData} onUpdate={handleUpdate} />;
       case "experience":
-        return (
-          <ExperienceForm
-            data={resumeData}
-            onUpdate={(newData) => setResumeData({ ...resumeData, ...newData })}
-          />
-        );
+        return <ExperienceForm data={resumeData} onUpdate={handleUpdate} />;
       case "education":
-        return (
-          <EducationForm
-            data={resumeData}
-            onUpdate={(newData) => setResumeData({ ...resumeData, ...newData })}
-          />
-        );
+        return <EducationForm data={resumeData} onUpdate={handleUpdate} />;
       case "skills":
-        return (
-          <SkillsForm
-            data={resumeData}
-            onUpdate={(newData) => setResumeData({ ...resumeData, ...newData })}
-          />
-        );
+        return <SkillsForm data={resumeData} onUpdate={handleUpdate} />;
       case "template":
         return (
           <TemplateSelector

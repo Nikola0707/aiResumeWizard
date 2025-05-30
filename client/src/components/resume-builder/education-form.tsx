@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { EducationItem, ResumeContent, educationItem } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,8 +16,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wand2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface EducationFormProps {
   data: ResumeContent;
@@ -27,8 +28,8 @@ interface EducationFormProps {
 export default function EducationForm({ data, onUpdate }: EducationFormProps) {
   const { toast } = useToast();
   const [educations, setEducations] = useState<EducationItem[]>(
-    data.education && data.education.length > 0 
-      ? data.education 
+    data.education && data.education.length > 0
+      ? data.education
       : [createEmptyEducationItem()]
   );
   const [activeIndex, setActiveIndex] = useState(0);
@@ -38,31 +39,34 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
     resolver: zodResolver(educationItem),
     defaultValues: educations[activeIndex] || createEmptyEducationItem(),
   });
-  
+
   // Watch current checkbox to show/hide end date
   const currentEducation = form.watch("current");
 
-  // Update data when form changes
-  const updateEducation = (values: EducationItem) => {
-    const updatedEducations = [...educations];
-    updatedEducations[activeIndex] = values;
-    setEducations(updatedEducations);
-    onUpdate({ education: updatedEducations });
-  };
+  // Update form when active education changes
+  useEffect(() => {
+    form.reset(educations[activeIndex] || createEmptyEducationItem());
+  }, [activeIndex, educations, form]);
+
+  // Update parent state on form changes
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      const updatedEducations = [...educations];
+      updatedEducations[activeIndex] = value as EducationItem;
+      setEducations(updatedEducations);
+      onUpdate({ education: updatedEducations });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, educations, activeIndex, onUpdate]);
 
   // Add a new education
   const addEducation = () => {
-    // First save the current form
-    form.handleSubmit((values) => {
-      const updatedEducations = [...educations];
-      updatedEducations[activeIndex] = values;
-      const newEducation = createEmptyEducationItem();
-      updatedEducations.push(newEducation);
-      setEducations(updatedEducations);
-      onUpdate({ education: updatedEducations });
-      setActiveIndex(updatedEducations.length - 1);
-      form.reset(newEducation);
-    })();
+    const newEducation = createEmptyEducationItem();
+    const updatedEducations = [...educations, newEducation];
+    setEducations(updatedEducations);
+    onUpdate({ education: updatedEducations });
+    setActiveIndex(updatedEducations.length - 1);
+    form.reset(newEducation);
   };
 
   // Remove an education
@@ -80,7 +84,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
     updatedEducations.splice(index, 1);
     setEducations(updatedEducations);
     onUpdate({ education: updatedEducations });
-    
+
     // If we're removing the active item, select the one before it
     if (index === activeIndex) {
       const newIndex = Math.max(0, index - 1);
@@ -94,87 +98,58 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
 
   // Select an education to edit
   const selectEducation = (index: number) => {
-    // First save the current form
-    form.handleSubmit((values) => {
-      const updatedEducations = [...educations];
-      updatedEducations[activeIndex] = values;
-      setEducations(updatedEducations);
-      onUpdate({ education: updatedEducations });
-      setActiveIndex(index);
-      form.reset(updatedEducations[index]);
-    })();
+    setActiveIndex(index);
+    form.reset(educations[index]);
   };
 
   return (
     <div className="space-y-6">
       <Alert className="bg-primary-50 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border-primary-200 dark:border-primary-800">
-        <Wand2 className="h-4 w-4" />
         <AlertDescription>
-          Education details highlight your academic credentials. Include relevant coursework or academic achievements that align with your target job.
+          List your educational background in reverse chronological order.
+          Include relevant coursework, honors, and achievements.
         </AlertDescription>
       </Alert>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Left side - Education list */}
-        <div className="md:col-span-1">
-          <h3 className="text-sm font-medium mb-3">Education</h3>
-          <div className="space-y-2">
-            {educations.map((edu, index) => (
-              <div 
-                key={edu.id} 
-                className={`
-                  p-3 rounded-md cursor-pointer border
-                  ${index === activeIndex 
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-950 dark:border-primary-500' 
-                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'}
-                `}
-                onClick={() => selectEducation(index)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="w-full overflow-hidden">
-                    <p className="font-medium truncate">
-                      {edu.institution || "Institution Name"}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {edu.degree || "Degree"}{edu.field ? ` in ${edu.field}` : ''}
-                    </p>
-                  </div>
+        <Card className="md:col-span-1">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              {educations.map((edu, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Button
+                    variant={activeIndex === index ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => selectEducation(index)}
+                  >
+                    {edu.institution || "Untitled Institution"}
+                  </Button>
                   {educations.length > 1 && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-gray-500 hover:text-red-500"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeEducation(index);
-                      }}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeEducation(index)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
-              </div>
-            ))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full mt-2" 
-              size="sm"
-              onClick={addEducation}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Education
-            </Button>
-          </div>
-        </div>
-        
-        {/* Right side - Edit form */}
+              ))}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={addEducation}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Education
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="md:col-span-3">
           <Form {...form}>
-            <form 
-              className="space-y-4" 
-              onChange={form.handleSubmit(updateEducation)}
-            >
+            <form className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -183,13 +158,16 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                     <FormItem>
                       <FormLabel>Institution</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Stanford University" {...field} />
+                        <Input
+                          placeholder="e.g. Stanford University"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="location"
@@ -203,7 +181,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="degree"
@@ -211,13 +189,16 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                     <FormItem>
                       <FormLabel>Degree</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Bachelor of Science" {...field} />
+                        <Input
+                          placeholder="e.g. Bachelor of Science"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="field"
@@ -231,7 +212,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex items-end gap-4">
                   <FormField
                     control={form.control}
@@ -249,7 +230,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                     )}
                   />
                 </div>
-                
+
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -264,7 +245,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                       </FormItem>
                     )}
                   />
-                  
+
                   {!currentEducation && (
                     <FormField
                       control={form.control}
@@ -282,7 +263,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
                   )}
                 </div>
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="description"
