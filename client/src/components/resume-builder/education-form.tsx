@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { EducationItem, ResumeContent, educationItem } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
+import debounce from "lodash/debounce";
 
 interface EducationFormProps {
   data: ResumeContent;
@@ -48,21 +49,72 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
     form.reset(educations[activeIndex] || createEmptyEducationItem());
   }, [activeIndex, educations, form]);
 
-  // Update parent state on form changes
+  // Update parent state on form changes with debounce
   useEffect(() => {
-    const subscription = form.watch((value) => {
+    const updateEducations = debounce((value: any) => {
+      if (!value) {
+        console.log("No value in education form watch, returning");
+        return;
+      }
+
       const updatedEducations = [...educations];
-      updatedEducations[activeIndex] = value as EducationItem;
+      const currentEducation = updatedEducations[activeIndex];
+
+      // Only update if there are actual changes
+      const hasChanges = Object.keys(value).some(
+        (key) => currentEducation[key as keyof EducationItem] !== value[key]
+      );
+
+      if (!hasChanges) {
+        console.log("No changes detected, skipping update");
+        return;
+      }
+
+      updatedEducations[activeIndex] = {
+        ...currentEducation,
+        ...value,
+      } as EducationItem;
+
+      console.log("Updating educations:", {
+        before: educations,
+        after: updatedEducations,
+        activeIndex,
+        changes: value,
+      });
+
       setEducations(updatedEducations);
       onUpdate({ education: updatedEducations });
+    }, 300); // 300ms debounce
+
+    const subscription = form.watch((value) => {
+      console.log("Education form watch triggered:", {
+        value,
+        activeIndex,
+        currentEducations: educations,
+      });
+      updateEducations(value);
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      updateEducations.cancel();
+    };
   }, [form, educations, activeIndex, onUpdate]);
 
   // Add a new education
   const addEducation = () => {
+    console.log("Adding new education:", {
+      currentEducations: educations,
+    });
+
     const newEducation = createEmptyEducationItem();
     const updatedEducations = [...educations, newEducation];
+
+    console.log("New education added:", {
+      newEducation,
+      updatedEducations,
+    });
+
     setEducations(updatedEducations);
     onUpdate({ education: updatedEducations });
     setActiveIndex(updatedEducations.length - 1);
@@ -71,6 +123,11 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
 
   // Remove an education
   const removeEducation = (index: number) => {
+    console.log("Removing education:", {
+      index,
+      currentEducations: educations,
+    });
+
     if (educations.length <= 1) {
       toast({
         title: "Cannot remove",
@@ -82,6 +139,13 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
 
     const updatedEducations = [...educations];
     updatedEducations.splice(index, 1);
+
+    console.log("Education removed:", {
+      before: educations,
+      after: updatedEducations,
+      index,
+    });
+
     setEducations(updatedEducations);
     onUpdate({ education: updatedEducations });
 
@@ -98,6 +162,11 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
 
   // Select an education to edit
   const selectEducation = (index: number) => {
+    console.log("Selecting education:", {
+      index,
+      education: educations[index],
+    });
+
     setActiveIndex(index);
     form.reset(educations[index]);
   };
@@ -116,7 +185,7 @@ export default function EducationForm({ data, onUpdate }: EducationFormProps) {
           <CardContent className="pt-6">
             <div className="space-y-2">
               {educations.map((edu, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div key={edu.id} className="flex items-center gap-2">
                   <Button
                     variant={activeIndex === index ? "secondary" : "ghost"}
                     className="w-full justify-start"

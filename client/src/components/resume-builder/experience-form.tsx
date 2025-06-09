@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
-import { v4 as uuidv4 } from "uuid";
 import { ExperienceItem, ResumeContent, experienceItem } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createEmptyExperienceItem } from "@/lib/resume-data";
@@ -15,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useMutation } from "@tanstack/react-query";
 import { generateExperienceBullets } from "@/lib/openai";
@@ -23,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Plus, Wand2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
+import debounce from "lodash/debounce";
 
 interface ExperienceFormProps {
   data: ResumeContent;
@@ -59,21 +57,72 @@ export default function ExperienceForm({
     form.reset(experiences[activeIndex] || createEmptyExperienceItem());
   }, [activeIndex, experiences, form]);
 
-  // Update parent state on form changes
+  // Update parent state on form changes with debounce
   useEffect(() => {
-    const subscription = form.watch((value) => {
+    const updateExperiences = debounce((value: any) => {
+      if (!value) {
+        console.log("No value in form watch, returning");
+        return;
+      }
+
       const updatedExperiences = [...experiences];
-      updatedExperiences[activeIndex] = value as ExperienceItem;
+      const currentExperience = updatedExperiences[activeIndex];
+
+      // Only update if there are actual changes
+      const hasChanges = Object.keys(value).some(
+        (key) => currentExperience[key as keyof ExperienceItem] !== value[key]
+      );
+
+      if (!hasChanges) {
+        console.log("No changes detected, skipping update");
+        return;
+      }
+
+      updatedExperiences[activeIndex] = {
+        ...currentExperience,
+        ...value,
+      } as ExperienceItem;
+
+      console.log("Updating experiences:", {
+        before: experiences,
+        after: updatedExperiences,
+        activeIndex,
+        changes: value,
+      });
+
       setExperiences(updatedExperiences);
       onUpdate({ experience: updatedExperiences });
+    }, 300); // 300ms debounce
+
+    const subscription = form.watch((value) => {
+      console.log("Form watch triggered:", {
+        value,
+        activeIndex,
+        currentExperiences: experiences,
+      });
+      updateExperiences(value);
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      updateExperiences.cancel();
+    };
   }, [form, experiences, activeIndex, onUpdate]);
 
   // Add a new experience
   const addExperience = () => {
+    console.log("Adding new experience:", {
+      currentExperiences: experiences,
+    });
+
     const newExperience = createEmptyExperienceItem();
     const updatedExperiences = [...experiences, newExperience];
+
+    console.log("New experience added:", {
+      newExperience,
+      updatedExperiences,
+    });
+
     setExperiences(updatedExperiences);
     onUpdate({ experience: updatedExperiences });
     setActiveIndex(updatedExperiences.length - 1);
@@ -82,6 +131,11 @@ export default function ExperienceForm({
 
   // Remove an experience
   const removeExperience = (index: number) => {
+    console.log("Removing experience:", {
+      index,
+      currentExperiences: experiences,
+    });
+
     if (experiences.length <= 1) {
       toast({
         title: "Cannot remove",
@@ -93,6 +147,13 @@ export default function ExperienceForm({
 
     const updatedExperiences = [...experiences];
     updatedExperiences.splice(index, 1);
+
+    console.log("Experience removed:", {
+      before: experiences,
+      after: updatedExperiences,
+      index,
+    });
+
     setExperiences(updatedExperiences);
     onUpdate({ experience: updatedExperiences });
 
@@ -109,6 +170,11 @@ export default function ExperienceForm({
 
   // Select an experience to edit
   const selectExperience = (index: number) => {
+    console.log("Selecting experience:", {
+      index,
+      experience: experiences[index],
+    });
+
     setActiveIndex(index);
     form.reset(experiences[index]);
   };
@@ -177,7 +243,7 @@ export default function ExperienceForm({
           <CardContent className="pt-6">
             <div className="space-y-2">
               {experiences.map((exp, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div key={exp.id} className="flex items-center gap-2">
                   <Button
                     variant={activeIndex === index ? "secondary" : "ghost"}
                     className="w-full justify-start"
