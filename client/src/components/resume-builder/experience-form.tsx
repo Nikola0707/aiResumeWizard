@@ -118,6 +118,8 @@ export default function ExperienceForm({
     mutationFn: async () => {
       const jobTitle = form.getValues("title");
       const company = form.getValues("company");
+      const description = form.getValues("description");
+      const location = form.getValues("location");
 
       if (!jobTitle || !company) {
         throw new Error("Job title and company are required");
@@ -125,7 +127,10 @@ export default function ExperienceForm({
 
       const bullets = await generateExperienceBullets({
         jobTitle,
-        company,
+        jobDescription: `${jobTitle} at ${company}${
+          location ? ` in ${location}` : ""
+        }. ${description || ""}`,
+        accomplishments: form.getValues("highlights") || [],
       });
 
       return bullets;

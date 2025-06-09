@@ -51,8 +51,8 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const [skills, setSkills] = useState<SkillItem[]>(
-    data.skills && data.skills.length > 0 
-      ? data.skills 
+    data.skills && data.skills.length > 0
+      ? data.skills
       : [createEmptySkillItem()]
   );
 
@@ -70,7 +70,7 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
   // Add a new skill
   const addSkill = (skillData?: SkillItem) => {
     const newSkill = skillData || form.getValues();
-    
+
     if (!newSkill.name || newSkill.name.trim() === "") {
       toast({
         title: "Skill name is required",
@@ -79,9 +79,13 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
       });
       return;
     }
-    
+
     // Check for duplicates
-    if (skills.some(skill => skill.name.toLowerCase() === newSkill.name.toLowerCase())) {
+    if (
+      skills.some(
+        (skill) => skill.name.toLowerCase() === newSkill.name.toLowerCase()
+      )
+    ) {
       toast({
         title: "Duplicate skill",
         description: "This skill already exists in your list",
@@ -98,7 +102,7 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
 
   // Remove a skill
   const removeSkill = (id: string) => {
-    const updatedSkills = skills.filter(skill => skill.id !== id);
+    const updatedSkills = skills.filter((skill) => skill.id !== id);
     setSkills(updatedSkills);
     onUpdate({ skills: updatedSkills });
   };
@@ -116,17 +120,22 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
 
     try {
       setIsGenerating(true);
-      const suggestions = await generateSkillSuggestions(jobTitle, jobDescription);
+      const suggestions = await generateSkillSuggestions(
+        jobTitle,
+        jobDescription
+      );
       setSuggestedSkills(suggestions);
-      
+
       toast({
         title: "Skills generated",
-        description: "AI has suggested skills based on your job title. Click to add them to your resume.",
+        description:
+          "AI has suggested skills based on your job title. Click to add them to your resume.",
       });
     } catch (error) {
       toast({
         title: "Error generating skills",
-        description: "An error occurred while generating skill suggestions. Please try again.",
+        description:
+          "An error occurred while generating skill suggestions. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -139,79 +148,108 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
     const newSkill = createEmptySkillItem();
     newSkill.name = skillName;
     newSkill.level = 3; // Default level
-    
-    addSkill(newSkill);
-    
+
+    const updatedSkills = [...skills, { ...newSkill, id: crypto.randomUUID() }];
+    setSkills(updatedSkills);
+    onUpdate({ skills: updatedSkills });
+
     // Remove from suggestions
-    setSuggestedSkills(suggestedSkills.filter(skill => skill !== skillName));
+    setSuggestedSkills(suggestedSkills.filter((skill) => skill !== skillName));
+  };
+
+  // Update skill level
+  const updateSkillLevel = (id: string, newLevel: number) => {
+    const updatedSkills = skills.map((skill) =>
+      skill.id === id ? { ...skill, level: newLevel } : skill
+    );
+    setSkills(updatedSkills);
+    onUpdate({ skills: updatedSkills });
   };
 
   return (
-    <div className="space-y-6">
-      <Alert className="bg-primary-50 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border-primary-200 dark:border-primary-800">
-        <Wand2 className="h-4 w-4" />
-        <AlertDescription>
-          Skills showcase your expertise and strengths. Include both technical and soft skills relevant to your target role.
-        </AlertDescription>
-      </Alert>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Current skills list */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Skills</CardTitle>
-              <CardDescription>
-                Add skills relevant to your target position. Rate your proficiency from 1-5.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {skills.length === 0 ? (
-                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-                  <p>No skills added yet</p>
-                  <p className="text-sm">Add skills manually or generate suggestions with AI</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {skills.map((skill) => (
-                    <div 
-                      key={skill.id} 
-                      className="p-3 rounded-md border border-gray-200 dark:border-gray-700 flex justify-between items-center"
-                    >
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <p className="font-medium">{skill.name}</p>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {skill.level}/5
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                          <div 
-                            className="bg-primary-600 h-1.5 rounded-full" 
-                            style={{ width: `${(skill.level || 1) * 20}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 ml-2 text-gray-500 hover:text-red-500"
-                        onClick={() => removeSkill(skill.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+    <Form {...form}>
+      <form className="space-y-6">
+        <Alert className="bg-primary-50 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border-primary-200 dark:border-primary-800">
+          <Wand2 className="h-4 w-4" />
+          <AlertDescription>
+            Skills showcase your expertise and strengths. Include both technical
+            and soft skills relevant to your target role.
+          </AlertDescription>
+        </Alert>
 
-              {/* Add skill form */}
-              <div className="mt-6">
-                <Form {...form}>
-                  <form 
-                    onSubmit={form.handleSubmit(values => addSkill(values))}
-                    className="space-y-4"
-                  >
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Current skills list */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Skills</CardTitle>
+                <CardDescription>
+                  Add skills relevant to your target position. Rate your
+                  proficiency from 1-5.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {skills.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    <p>No skills added yet</p>
+                    <p className="text-sm">
+                      Add skills manually or generate suggestions with AI
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {skills.map((skill) => (
+                      <div
+                        key={skill.id}
+                        className="p-3 rounded-md border border-gray-200 dark:border-gray-700 flex justify-between items-center"
+                      >
+                        <div className="flex-1">
+                          <div className="flex justify-between mb-1">
+                            <p className="font-medium">{skill.name}</p>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {skill.level}/5
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                            <div
+                              className="bg-primary-600 h-1.5 rounded-full"
+                              style={{ width: `${(skill.level || 1) * 20}%` }}
+                            ></div>
+                          </div>
+                          <div className="mt-2">
+                            <Slider
+                              min={1}
+                              max={5}
+                              step={1}
+                              value={[skill.level || 3]}
+                              onValueChange={(value) =>
+                                updateSkillLevel(skill.id, value[0])
+                              }
+                              className="py-2"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>Beginner</span>
+                              <span>Intermediate</span>
+                              <span>Expert</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 ml-2 text-gray-500 hover:text-red-500"
+                          onClick={() => removeSkill(skill.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add skill form */}
+                <div className="mt-6">
+                  <div className="space-y-4">
                     <div className="flex flex-col md:flex-row gap-4">
                       <FormField
                         control={form.control}
@@ -220,13 +258,16 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
                           <FormItem className="flex-1">
                             <FormLabel>Skill Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g. React.js, Project Management" {...field} />
+                              <Input
+                                placeholder="e.g. React.js, Project Management"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="level"
@@ -239,7 +280,9 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
                                 max={5}
                                 step={1}
                                 value={[field.value || 3]}
-                                onValueChange={(value) => field.onChange(value[0])}
+                                onValueChange={(value) =>
+                                  field.onChange(value[0])
+                                }
                                 className="py-4"
                               />
                             </FormControl>
@@ -253,50 +296,79 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
                         )}
                       />
                     </div>
-                    
-                    <Button type="submit">
-                      <Plus className="mr-2 h-4 w-4" />
+                    <Button
+                      type="button"
+                      onClick={form.handleSubmit((values) => addSkill(values))}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
                       Add Skill
                     </Button>
-                  </form>
-                </Form>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* AI suggestions */}
-        <div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Suggestions */}
           <Card>
             <CardHeader>
               <CardTitle>AI Skill Suggestions</CardTitle>
               <CardDescription>
-                Get AI-generated skill suggestions based on your target job
+                Generate relevant skills based on your target job title.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Button 
-                  variant="outline" 
+                <div className="space-y-2">
+                  <FormLabel>Job Title</FormLabel>
+                  <Input
+                    placeholder="e.g. Senior Software Engineer"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <FormLabel>Job Description (Optional)</FormLabel>
+                  <Input
+                    placeholder="Paste job description for more relevant suggestions"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
                   className="w-full"
-                  onClick={() => setDialogOpen(true)}
+                  onClick={generateSuggestions}
+                  disabled={isGenerating}
                 >
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Skill Suggestions
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Generate Suggestions
+                    </>
+                  )}
                 </Button>
-                
+
                 {suggestedSkills.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Suggested Skills</h4>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Suggested Skills:</p>
                     <div className="flex flex-wrap gap-2">
-                      {suggestedSkills.map((skill, index) => (
-                        <Badge 
-                          key={index}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-950"
+                      {suggestedSkills.map((skill) => (
+                        <Badge
+                          key={skill}
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-primary-100"
                           onClick={() => addSuggestedSkill(skill)}
                         >
-                          <Plus className="mr-1 h-3 w-3" />
                           {skill}
                         </Badge>
                       ))}
@@ -307,67 +379,7 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
             </CardContent>
           </Card>
         </div>
-      </div>
-      
-      {/* AI Suggestions Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Generate Skill Suggestions</DialogTitle>
-            <DialogDescription>
-              Enter your target job information to get AI-powered skill suggestions.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <FormLabel htmlFor="job-title">Job Title (Required)</FormLabel>
-              <Input 
-                id="job-title" 
-                placeholder="e.g. Senior Software Engineer"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <FormLabel htmlFor="job-description">Job Description (Optional)</FormLabel>
-              <textarea
-                id="job-description"
-                placeholder="Paste a job description for more targeted suggestions..."
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="secondary" 
-              onClick={() => setDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={generateSuggestions}
-              disabled={isGenerating || !jobTitle}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Suggestions
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      </form>
+    </Form>
   );
 }

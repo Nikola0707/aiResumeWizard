@@ -2,15 +2,17 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+// Zod is a TypeScript-first schema validation library that helps ensure data integrity
+// by validating data at runtime and providing type inference at compile time
 import { z } from "zod";
-import { insertResumeSchema, resumeContent } from "@shared/schema";
+import { insertResumeSchema } from "@shared/schema";
 import {
   generateProfessionalSummary,
   generateExperienceBullets,
   analyzeResumeForATS,
   generateSkillSuggestions,
   generateCoverLetter,
-} from "./openai";
+} from "./services/index";
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: any) => {

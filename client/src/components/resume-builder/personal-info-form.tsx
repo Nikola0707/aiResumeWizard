@@ -1,117 +1,33 @@
-import { useState, useEffect } from "react";
-import { ResumeContent, personalInfo, type PersonalInfo } from "@shared/schema";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+// Type for resume data structure - used for form validation and data handling
+import { ResumeContent } from "@shared/schema";
+
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Wand2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { generateProfessionalSummary } from "@/lib/openai";
-import { useToast } from "@/hooks/use-toast";
+import { usePersonalInfoForm } from "@/hooks/use-personal-info-form";
 
 interface PersonalInfoFormProps {
   data: ResumeContent;
   onUpdate: (data: Partial<ResumeContent>) => void;
 }
 
-type FormData = {
-  fullName: string;
-  professionalTitle: string;
-  email?: string;
-  phone?: string;
-  location?: string;
-  website?: string;
-  summary?: string;
-};
-
 export default function PersonalInfoForm({
   data,
   onUpdate,
 }: PersonalInfoFormProps) {
-  const { toast } = useToast();
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-
-  const form = useForm({
-    mode: "onChange",
-    defaultValues: {
-      fullName: data.personalInfo?.fullName ?? "",
-      professionalTitle: data.personalInfo?.professionalTitle ?? "",
-      email: data.personalInfo?.email ?? "",
-      phone: data.personalInfo?.phone ?? "",
-      location: data.personalInfo?.location ?? "",
-      website: data.personalInfo?.website ?? "",
-      summary: data.personalInfo?.summary ?? "",
-    },
-  } as const);
-
-  useEffect(() => {
-    form.reset(data.personalInfo);
-  }, [data.personalInfo, form]);
-
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      onUpdate({
-        personalInfo: {
-          fullName: value.fullName || "",
-          professionalTitle: value.professionalTitle || "",
-          email: value.email,
-          phone: value.phone,
-          location: value.location,
-          website: value.website,
-          summary: value.summary,
-        },
-      });
-    });
-    return () => subscription.unsubscribe();
-  }, [form, onUpdate]);
-
-  const handleGenerateSummary = async () => {
-    try {
-      setIsGeneratingSummary(true);
-
-      const professionalTitle = form.getValues("professionalTitle");
-      if (!professionalTitle) {
-        toast({
-          title: "Professional title required",
-          description:
-            "Please enter your professional title to generate a summary",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const summary = await generateProfessionalSummary({
-        professionalTitle,
-      });
-
-      form.setValue("summary", summary);
-      onUpdate({ personalInfo: { ...form.getValues(), summary } });
-
-      toast({
-        title: "Summary generated",
-        description:
-          "AI has created a professional summary for you. Feel free to edit it!",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate summary. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingSummary(false);
-    }
-  };
+  const { form, isGeneratingSummary, handleGenerateSummary } =
+    usePersonalInfoForm(data, onUpdate);
 
   return (
     <Form {...form}>

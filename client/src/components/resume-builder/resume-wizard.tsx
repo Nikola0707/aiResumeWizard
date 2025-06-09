@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ResumeContent, resumeContent } from "@shared/schema";
+import {
+  ResumeContent,
+  resumeContent,
+  ResumeTemplate,
+  resumeTemplate,
+} from "@shared/schema";
 import { createEmptyResumeContent, resumeTemplates } from "@/lib/resume-data";
 import PersonalInfoForm from "./personal-info-form";
 import ExperienceForm from "./experience-form";
@@ -54,17 +59,32 @@ export default function ResumeWizard() {
 
   const createResumeMutation = useMutation({
     mutationFn: async () => {
-      // Validate the data with zod schema
-      const validatedData = resumeContent.parse(resumeData);
+      try {
+        // Validate the data with zod schema
+        const validatedData = resumeContent.parse(resumeData);
 
-      // Create the resume
-      const response = await apiRequest("POST", "/api/resumes", {
-        title: resumeData.personalInfo.professionalTitle || "Untitled Resume",
-        template: selectedTemplate,
-        content: validatedData,
-      });
+        // Validate template
+        const validatedTemplate = resumeTemplate.parse(selectedTemplate);
 
-      return await response.json();
+        // Create the resume
+        const response = await apiRequest("POST", "/api/resumes", {
+          title: resumeData.personalInfo.professionalTitle || "Untitled Resume",
+          template: validatedTemplate,
+          content: validatedData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to create resume");
+        }
+
+        return await response.json();
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Failed to create resume");
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
