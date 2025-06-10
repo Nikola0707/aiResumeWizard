@@ -1,130 +1,93 @@
-import {
-  pgTable,
-  text,
-  serial,
-  integer,
-  boolean,
-  json,
-  timestamp,
-  primaryKey,
-  foreignKey,
-} from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { relations } from "drizzle-orm";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name"),
-  email: text("email"),
-  createdAt: timestamp("created_at").defaultNow(),
+// User schema
+export const userSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  password: z.string(),
+  name: z.string().nullable(),
+  email: z.string().nullable(),
+  createdAt: z.date(),
 });
 
-export const resumeTemplate = z.enum([
-  "modern",
-  "professional",
-  "creative",
-  "simple",
-  "elegant",
-]);
+export type User = z.infer<typeof userSchema>;
 
-export const resumes = pgTable("resumes", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  template: text("template").notNull(),
-  content: json("content").notNull(),
-  lastEdited: timestamp("last_edited").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-  downloads: integer("downloads").default(0),
-  atsScore: integer("ats_score"),
-});
-
-// Define relations after both tables are declared
-export const usersRelations = relations(users, ({ many }) => ({
-  resumes: many(resumes),
-}));
-
-export const resumesRelations = relations(resumes, ({ one }) => ({
-  user: one(users, {
-    fields: [resumes.userId],
-    references: [users.id],
-  }),
-}));
-
-export const personalInfo = z.object({
-  fullName: z.string(),
-  professionalTitle: z.string(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  location: z.string().optional(),
-  website: z.string().optional(),
-  summary: z.string().optional(),
-});
-
-export const experienceItem = z.object({
-  id: z.string(),
-  title: z.string(),
-  company: z.string(),
-  location: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  current: z.boolean().default(false),
-  description: z.string().optional(),
-  highlights: z.array(z.string()).optional(),
+// Resume content schemas
+export const skillItem = z.object({
+  name: z.string(),
+  level: z.number().min(1).max(5),
 });
 
 export const educationItem = z.object({
-  id: z.string(),
-  institution: z.string(),
-  degree: z.string().optional(),
-  field: z.string().optional(),
-  location: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  current: z.boolean().default(false),
+  school: z.string(),
+  degree: z.string(),
+  field: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
   description: z.string().optional(),
 });
 
-export const skillItem = z.object({
-  id: z.string(),
-  name: z.string(),
-  level: z.number().min(1).max(5).optional(),
-  category: z.string().optional(),
+export const experienceItem = z.object({
+  company: z.string(),
+  position: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+  description: z.string(),
+  bullets: z.array(z.string()),
 });
 
 export const resumeContent = z.object({
-  personalInfo: personalInfo,
-  experience: z.array(experienceItem).optional(),
-  education: z.array(educationItem).optional(),
-  skills: z.array(skillItem).optional(),
+  personalInfo: z.object({
+    name: z.string(),
+    email: z.string(),
+    phone: z.string(),
+    location: z.string(),
+    summary: z.string(),
+  }),
+  experience: z.array(experienceItem),
+  education: z.array(educationItem),
+  skills: z.array(skillItem),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  name: true,
-  email: true,
+export type SkillItem = z.infer<typeof skillItem>;
+export type EducationItem = z.infer<typeof educationItem>;
+export type ExperienceItem = z.infer<typeof experienceItem>;
+export type ResumeContent = z.infer<typeof resumeContent>;
+
+// Resume template type and schema
+export type ResumeTemplate = "modern" | "classic" | "professional" | "creative";
+
+export const resumeTemplate = z.enum([
+  "modern",
+  "classic",
+  "professional",
+  "creative",
+]);
+
+// Resume schema
+export const resumeSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  title: z.string(),
+  template: resumeTemplate,
+  content: resumeContent,
+  lastEdited: z.date(),
+  createdAt: z.date(),
+  downloads: z.number().default(0),
+  atsScore: z.number().nullable(),
 });
 
-export const insertResumeSchema = createInsertSchema(resumes).pick({
-  userId: true,
-  title: true,
-  template: true,
-  content: true,
+export type Resume = z.infer<typeof resumeSchema>;
+
+// Insert schemas (for creating new records)
+export const insertUserSchema = userSchema.omit({ id: true, createdAt: true });
+export const insertResumeSchema = resumeSchema.omit({
+  id: true,
+  createdAt: true,
+  lastEdited: true,
+  downloads: true,
+  atsScore: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
 export type InsertResume = z.infer<typeof insertResumeSchema>;
-export type Resume = typeof resumes.$inferSelect;
-export type ResumeTemplate = z.infer<typeof resumeTemplate>;
-export type PersonalInfo = z.infer<typeof personalInfo>;
-export type ExperienceItem = z.infer<typeof experienceItem>;
-export type EducationItem = z.infer<typeof educationItem>;
-export type SkillItem = z.infer<typeof skillItem>;
-export type ResumeContent = z.infer<typeof resumeContent>;
