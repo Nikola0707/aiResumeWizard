@@ -14,35 +14,44 @@ export type User = z.infer<typeof userSchema>;
 
 // Resume content schemas
 export const skillItem = z.object({
+  id: z.string(),
   name: z.string(),
   level: z.number().min(1).max(5),
 });
 
 export const educationItem = z.object({
-  school: z.string(),
+  id: z.string(),
+  institution: z.string(),
+  location: z.string(),
   degree: z.string(),
   field: z.string(),
   startDate: z.string(),
   endDate: z.string(),
+  current: z.boolean().default(false),
   description: z.string().optional(),
 });
 
 export const experienceItem = z.object({
+  id: z.string(),
+  title: z.string(),
   company: z.string(),
-  position: z.string(),
+  location: z.string(),
   startDate: z.string(),
   endDate: z.string(),
+  current: z.boolean().default(false),
   description: z.string(),
-  bullets: z.array(z.string()),
+  highlights: z.array(z.string()),
 });
 
 export const resumeContent = z.object({
   personalInfo: z.object({
-    name: z.string(),
-    email: z.string(),
-    phone: z.string(),
-    location: z.string(),
-    summary: z.string(),
+    fullName: z.string().optional(),
+    professionalTitle: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    location: z.string().optional(),
+    website: z.string().optional(),
+    summary: z.string().optional(),
   }),
   experience: z.array(experienceItem),
   education: z.array(educationItem),
