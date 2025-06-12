@@ -188,6 +188,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ai/analyze", isAuthenticated, async (req, res) => {
     try {
+      const stats = await getAIGenerationStats((req.user as any).id);
+
+      if (!stats || stats.aiGenerationCount >= 3) {
+        return res.status(403).json({
+          message:
+            "AI generation limit reached. Please upgrade your plan for more generations.",
+        });
+      }
+
       const { resumeText, jobDescription } = req.body;
       const analysis = await analyzeResumeForATS(resumeText, jobDescription);
 

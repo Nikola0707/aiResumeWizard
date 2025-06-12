@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Resume } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AIAssistantCard() {
   const { toast } = useToast();
@@ -49,11 +50,12 @@ export default function AIAssistantCard() {
       jobDescription: string;
       resumeId?: number;
     }) => {
-      return analyzeResumeForATS(
-        data.resumeText,
-        data.jobDescription,
-        data.resumeId
-      );
+      const response = await apiRequest("POST", "/api/ai/analyze", data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message);
+      }
+      return response.json();
     },
     onSuccess: (data) => {
       setAnalysisResult(data);
@@ -65,9 +67,9 @@ export default function AIAssistantCard() {
             : "Consider implementing the recommendations to improve your score.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Analysis failed",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
