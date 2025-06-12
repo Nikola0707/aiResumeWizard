@@ -13,6 +13,7 @@ import {
   generateSkillSuggestions,
   generateCoverLetter,
   incrementAIGenerationCount,
+  getAIGenerationStats,
 } from "./services/index";
 
 // Middleware to check if user is authenticated
@@ -147,6 +148,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI routes
   app.post("/api/ai/summary", isAuthenticated, async (req, res) => {
     try {
+      const stats = await getAIGenerationStats((req.user as any).id);
+
+      if (!stats || stats.aiGenerationCount >= 3) {
+        return res.status(403).json({
+          message:
+            "AI generation limit reached. Please upgrade your plan for more generations.",
+        });
+      }
+
       const summary = await generateProfessionalSummary(req.body);
       await incrementAIGenerationCount((req.user as any).id);
       res.json({ summary });
