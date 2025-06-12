@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import admin from "./firebase-admin";
+import { sendSlackNotification } from "./slack-notifications";
 
 declare global {
   namespace Express {
@@ -61,6 +62,9 @@ async function handleFirebaseAuth(
         email: email || `${uid}@firebase.com`, // Email may not always be available
         name: name || "Firebase User",
       });
+
+      // Send Slack notification for new user
+      await sendSlackNotification(user);
     }
 
     // Log in the user
@@ -135,6 +139,9 @@ export function setupAuth(app: Express) {
         ...req.body,
         password: await hashPassword(req.body.password),
       });
+
+      // Send Slack notification for new user
+      await sendSlackNotification(user);
 
       // Don't send the password back
       const { password, ...userWithoutPassword } = user;
