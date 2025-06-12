@@ -167,6 +167,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ai/bullets", isAuthenticated, async (req, res) => {
     try {
+      const stats = await getAIGenerationStats((req.user as any).id);
+
+      if (!stats || stats.aiGenerationCount >= 3) {
+        return res.status(403).json({
+          message:
+            "AI generation limit reached. Please upgrade your plan for more generations.",
+        });
+      }
+
       const bullets = await generateExperienceBullets(req.body);
       await incrementAIGenerationCount((req.user as any).id);
       res.json({ bullets });
@@ -196,9 +205,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ai/skills", isAuthenticated, async (req, res) => {
     try {
+      const stats = await getAIGenerationStats((req.user as any).id);
+
+      if (!stats || stats.aiGenerationCount >= 3) {
+        return res.status(403).json({
+          message:
+            "AI generation limit reached. Please upgrade your plan for more generations.",
+        });
+      }
+
       const { jobTitle, jobDescription } = req.body;
       const skills = await generateSkillSuggestions(jobTitle, jobDescription);
-      // No AI generation for skills suggestions, so no tracking here
+      await incrementAIGenerationCount((req.user as any).id);
       res.json({ skills });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate skill suggestions" });
