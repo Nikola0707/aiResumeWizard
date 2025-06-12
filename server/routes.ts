@@ -12,6 +12,7 @@ import {
   analyzeResumeForATS,
   generateSkillSuggestions,
   generateCoverLetter,
+  incrementAIGenerationCount,
 } from "./services/index";
 
 // Middleware to check if user is authenticated
@@ -147,6 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/summary", isAuthenticated, async (req, res) => {
     try {
       const summary = await generateProfessionalSummary(req.body);
+      await incrementAIGenerationCount((req.user as any).id);
       res.json({ summary });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate summary" });
@@ -156,6 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/bullets", isAuthenticated, async (req, res) => {
     try {
       const bullets = await generateExperienceBullets(req.body);
+      await incrementAIGenerationCount((req.user as any).id);
       res.json({ bullets });
     } catch (error) {
       res
@@ -174,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const resumeId = parseInt(req.body.resumeId);
         await storage.updateAtsScore(resumeId, analysis.score);
       }
-
+      await incrementAIGenerationCount((req.user as any).id);
       res.json(analysis);
     } catch (error) {
       res.status(500).json({ message: "Failed to analyze resume" });
@@ -185,6 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { jobTitle, jobDescription } = req.body;
       const skills = await generateSkillSuggestions(jobTitle, jobDescription);
+      // No AI generation for skills suggestions, so no tracking here
       res.json({ skills });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate skill suggestions" });
@@ -194,6 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/cover-letter", isAuthenticated, async (req, res) => {
     try {
       const coverLetter = await generateCoverLetter(req.body);
+      await incrementAIGenerationCount((req.user as any).id);
       res.json({ coverLetter });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate cover letter" });

@@ -45,3 +45,8 @@ export interface CoverLetterOptions {
   highlightExperience?: string[];
   customInstructions?: string;
 }
+
+export interface UserAITracking {
+  aiGenerationCount: number;
+  lastGenerationTimestamp: Date;
+}

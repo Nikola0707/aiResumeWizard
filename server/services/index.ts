@@ -3,3 +3,4 @@ export * from "./bullets-service";
 export * from "./ats-service";
 export * from "./skills-service";
 export * from "./cover-letter-service";
+export * from "./ai-tracking-service";
