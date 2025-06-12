@@ -66,11 +66,15 @@ export async function generateProfessionalSummary(
 ): Promise<string> {
   try {
     const response = await apiRequest("POST", "/api/ai/summary", options);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message);
+    }
     const data = await response.json();
     return data.summary;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating professional summary:", error);
-    throw new Error("Failed to generate professional summary");
+    throw error;
   }
 }
 

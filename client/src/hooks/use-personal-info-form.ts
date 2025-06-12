@@ -72,10 +72,10 @@ export const usePersonalInfoForm = (
         description:
           "AI has created a professional summary for you. Feel free to edit it!",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to generate summary. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
