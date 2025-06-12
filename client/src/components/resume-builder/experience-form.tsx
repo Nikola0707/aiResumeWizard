@@ -22,6 +22,7 @@ import { Loader2, Trash2, Plus, Wand2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import debounce from "lodash/debounce";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ExperienceFormProps {
   data: ResumeContent;
@@ -191,7 +192,7 @@ export default function ExperienceForm({
         throw new Error("Job title and company are required");
       }
 
-      const bullets = await generateExperienceBullets({
+      const response = await apiRequest("POST", "/api/ai/bullets", {
         jobTitle,
         jobDescription: `${jobTitle} at ${company}${
           location ? ` in ${location}` : ""
@@ -199,7 +200,13 @@ export default function ExperienceForm({
         accomplishments: form.getValues("highlights") || [],
       });
 
-      return bullets;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message);
+      }
+
+      const data = await response.json();
+      return data.bullets;
     },
     onSuccess: (bullets) => {
       form.setValue("highlights", bullets);
@@ -220,9 +227,7 @@ export default function ExperienceForm({
     onError: (error) => {
       toast({
         title: "Error",
-        description:
-          error.message ||
-          "Failed to generate bullet points. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     },

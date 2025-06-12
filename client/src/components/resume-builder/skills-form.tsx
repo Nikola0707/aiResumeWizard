@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Wand2, Loader2 } from "lucide-react";
@@ -27,15 +28,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+
+import { apiRequest } from "@/lib/queryClient";
 
 interface SkillsFormProps {
   data: ResumeContent;
@@ -48,7 +42,6 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
   const [suggestedSkills, setSuggestedSkills] = useState<string[]>([]);
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   const [skills, setSkills] = useState<SkillItem[]>(
     data.skills && data.skills.length > 0
@@ -120,22 +113,28 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
 
     try {
       setIsGenerating(true);
-      const suggestions = await generateSkillSuggestions(
+      const response = await apiRequest("POST", "/api/ai/skills", {
         jobTitle,
-        jobDescription
-      );
-      setSuggestedSkills(suggestions);
+        jobDescription,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message);
+      }
+
+      const data = await response.json();
+      setSuggestedSkills(data.skills);
 
       toast({
         title: "Skills generated",
         description:
           "AI has suggested skills based on your job title. Click to add them to your resume.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error generating skills",
-        description:
-          "An error occurred while generating skill suggestions. Please try again.",
+        title: "Error",
+        description: error.message,
         variant: "destructive",
       });
     } finally {

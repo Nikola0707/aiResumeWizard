@@ -83,11 +83,15 @@ export async function generateExperienceBullets(
 ): Promise<string[]> {
   try {
     const response = await apiRequest("POST", "/api/ai/bullets", options);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message);
+    }
     const data = await response.json();
     return data.bullets;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating experience bullets:", error);
-    throw new Error("Failed to generate experience bullets");
+    throw error;
   }
 }
 
