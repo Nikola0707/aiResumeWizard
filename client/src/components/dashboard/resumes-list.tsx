@@ -2,21 +2,11 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { 
-  Card, 
-  CardHeader, 
-  CardContent 
-} from "@/components/ui/card";
-import { 
-  FileEdit, 
-  Download, 
-  Trash2, 
-  FileText, 
-  Loader2 
-} from "lucide-react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { FileEdit, Download, Trash2, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -31,16 +21,23 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { generateResumePDF } from "@/lib/pdf-generator";
 import { useToast } from "@/hooks/use-toast";
 
+interface Resume {
+  id: number;
+  title: string;
+  lastEdited: string;
+  template: string;
+}
+
 export default function ResumesList() {
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   const [resumeToDelete, setResumeToDelete] = useState<number | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState<number | null>(null);
-  
-  const { data: resumes, isLoading } = useQuery({
+
+  const { data: resumes, isLoading } = useQuery<Resume[]>({
     queryKey: ["/api/resumes"],
   });
-  
+
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/resumes/${id}`);
@@ -60,24 +57,24 @@ export default function ResumesList() {
       });
     },
   });
-  
+
   const handleEdit = (id: number) => {
     navigate(`/resume/${id}`);
   };
-  
+
   const handleDownload = async (resume: any) => {
     try {
       setGeneratingPDF(resume.id);
       const pdfDataUri = await generateResumePDF(resume);
-      
+
       // Create a link and trigger download
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = pdfDataUri;
-      link.download = `${resume.title || 'Resume'}.pdf`;
+      link.download = `${resume.title || "Resume"}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast({
         title: "Download successful",
         description: "Your resume has been downloaded as a PDF",
@@ -92,18 +89,18 @@ export default function ResumesList() {
       setGeneratingPDF(null);
     }
   };
-  
+
   const handleDelete = (id: number) => {
     setResumeToDelete(id);
   };
-  
+
   const confirmDelete = () => {
     if (resumeToDelete !== null) {
       deleteMutation.mutate(resumeToDelete);
       setResumeToDelete(null);
     }
   };
-  
+
   if (isLoading) {
     return (
       <Card>
@@ -120,7 +117,7 @@ export default function ResumesList() {
       </Card>
     );
   }
-  
+
   if (!resumes || resumes.length === 0) {
     return (
       <Card>
@@ -132,9 +129,16 @@ export default function ResumesList() {
         <CardContent>
           <div className="py-8 text-center">
             <FileText className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No resumes yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">Create your first resume to get started</p>
-            <Button onClick={() => navigate("/builder")}>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+              No resumes yet
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4 px-4 sm:px-0">
+              Create your first resume to get started
+            </p>
+            <Button
+              onClick={() => navigate("/builder")}
+              className="w-full sm:w-auto"
+            >
               Create Resume
             </Button>
           </div>
@@ -142,14 +146,14 @@ export default function ResumesList() {
       </Card>
     );
   }
-  
+
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium">Your Resumes</h3>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            {resumes.length} {resumes.length === 1 ? 'resume' : 'resumes'}
+            {resumes.length} {resumes.length === 1 ? "resume" : "resumes"}
           </span>
         </div>
       </CardHeader>
@@ -157,7 +161,7 @@ export default function ResumesList() {
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {resumes.map((resume) => {
             // Format the date to relative time (e.g., "2 days ago")
-            let lastEditedText = 'Unknown date';
+            let lastEditedText = "Unknown date";
             if (resume.lastEdited) {
               try {
                 const date = new Date(resume.lastEdited);
@@ -166,24 +170,36 @@ export default function ResumesList() {
                 console.error("Date parsing error:", e);
               }
             }
-            
+
             // Determine which template color to use for the icon background
             const templateColors = {
-              modern: "bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300",
-              professional: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
-              creative: "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300",
-              simple: "bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300",
-              elegant: "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300",
+              modern:
+                "bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300",
+              professional:
+                "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
+              creative:
+                "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300",
+              simple:
+                "bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300",
+              elegant:
+                "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300",
             };
-            
-            const colorClass = templateColors[resume.template as keyof typeof templateColors] || templateColors.modern;
-            
+
+            const colorClass =
+              templateColors[resume.template as keyof typeof templateColors] ||
+              templateColors.modern;
+
             return (
-              <li key={resume.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-                <div className="flex items-center px-4 py-4">
+              <li
+                key={resume.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-750"
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center px-4 py-4 gap-4 sm:gap-0">
                   <div className="min-w-0 flex-1 flex items-center">
                     <div className="flex-shrink-0">
-                      <div className={`h-12 w-10 flex items-center justify-center ${colorClass} rounded`}>
+                      <div
+                        className={`h-12 w-10 flex items-center justify-center ${colorClass} rounded`}
+                      >
                         <FileText className="h-5 w-5" />
                       </div>
                     </div>
@@ -193,38 +209,45 @@ export default function ResumesList() {
                           {resume.title}
                         </p>
                         <p className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                          <span className="truncate">Last edited: {lastEditedText}</span>
+                          <span className="truncate">
+                            Last edited: {lastEditedText}
+                          </span>
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                  <div className="flex gap-2 w-full sm:w-auto justify-end">
+                    <Button
+                      variant="outline"
                       size="icon"
                       onClick={() => handleEdit(resume.id)}
+                      className="flex-1 sm:flex-none"
                     >
                       <FileEdit className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
                       onClick={() => handleDownload(resume)}
                       disabled={generatingPDF === resume.id}
+                      className="flex-1 sm:flex-none"
                     >
                       {generatingPDF === resume.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Download className="h-4 w-4" />
                       )}
+                      <span className="sr-only">Download</span>
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
-                      className="text-red-500 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950"
+                      className="flex-1 sm:flex-none text-red-500 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950"
                       onClick={() => handleDelete(resume.id)}
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
                     </Button>
                   </div>
                 </div>
@@ -233,8 +256,11 @@ export default function ResumesList() {
           })}
         </ul>
       </CardContent>
-      
-      <AlertDialog open={resumeToDelete !== null} onOpenChange={() => setResumeToDelete(null)}>
+
+      <AlertDialog
+        open={resumeToDelete !== null}
+        onOpenChange={() => setResumeToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -245,7 +271,7 @@ export default function ResumesList() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
