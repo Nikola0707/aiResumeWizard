@@ -89,10 +89,13 @@ export default function ResumesPage() {
 
   return (
     <Layout>
-      <div className="container py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Resumes</h1>
-          <Button onClick={() => setLocation("/builder")}>
+      <div className="container px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">My Resumes</h1>
+          <Button
+            onClick={() => setLocation("/builder")}
+            className="w-full sm:w-auto"
+          >
             <PlusCircle className="mr-2 h-4 w-4" />
             Create New Resume
           </Button>
@@ -108,20 +111,22 @@ export default function ResumesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {resumes.map((resume) => (
-              <Card key={resume.id}>
-                <CardHeader>
-                  <CardTitle>{resume.title}</CardTitle>
-                  <CardDescription>
+              <Card key={resume.id} className="flex flex-col">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg sm:text-xl">
+                    {resume.title}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
                     Last edited:{" "}
                     {resume.lastEdited
                       ? format(new Date(resume.lastEdited), "MMM d, yyyy")
                       : "Never"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CardContent className="pb-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <span>Template: {resume.template}</span>
                     <span>•</span>
                     <span>{resume.downloads} downloads</span>
@@ -133,49 +138,49 @@ export default function ResumesPage() {
                     )}
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-between">
+                <CardFooter className="flex flex-col gap-3 mt-auto pt-2">
                   <Button
                     variant="outline"
                     onClick={() => setLocation(`/resume/${resume.id}`)}
+                    className="w-full"
                   >
                     <FileEdit className="mr-2 h-4 w-4" />
                     Edit
                   </Button>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => downloadMutation.mutate(resume.id)}
-                      disabled={downloadMutation.isPending}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
+                  <Button
+                    variant="outline"
+                    onClick={() => downloadMutation.mutate(resume.id)}
+                    disabled={downloadMutation.isPending}
+                    className="w-full"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="w-full">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Resume</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this resume? This
+                          action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteMutation.mutate(resume.id)}
+                        >
                           Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Resume</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this resume? This
-                            action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(resume.id)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </CardFooter>
               </Card>
             ))}
