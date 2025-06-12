@@ -234,6 +234,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ai/cover-letter", isAuthenticated, async (req, res) => {
     try {
+      const stats = await getAIGenerationStats((req.user as any).id);
+
+      if (!stats || stats.aiGenerationCount >= 3) {
+        return res.status(403).json({
+          message:
+            "AI generation limit reached. Please upgrade your plan for more generations.",
+        });
+      }
+
       const coverLetter = await generateCoverLetter(req.body);
       await incrementAIGenerationCount((req.user as any).id);
       res.json({ coverLetter });

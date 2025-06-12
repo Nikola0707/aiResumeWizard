@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { type Resume } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function CoverLetterGenerator() {
   const { toast } = useToast();
@@ -43,7 +44,13 @@ export default function CoverLetterGenerator() {
 
   const generateMutation = useMutation({
     mutationFn: async (data: CoverLetterOptions) => {
-      return generateCoverLetter(data);
+      const response = await apiRequest("POST", "/api/ai/cover-letter", data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message);
+      }
+      const responseData = await response.json();
+      return responseData.coverLetter;
     },
     onSuccess: (data) => {
       setGeneratedLetter(data);
@@ -52,7 +59,7 @@ export default function CoverLetterGenerator() {
         description: "Your cover letter has been generated successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Generation failed",
         description: error.message,
