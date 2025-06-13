@@ -10,6 +10,11 @@ export async function sendSlackNotification(user: User) {
   }
 
   try {
+    console.log(
+      "Attempting to send Slack notification for user:",
+      user.username
+    );
+
     const message = {
       blocks: [
         {
@@ -49,13 +54,23 @@ export async function sendSlackNotification(user: User) {
       ],
     };
 
-    await fetch(SLACK_WEBHOOK_URL, {
+    const response = await fetch(SLACK_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(message),
     });
+
+    if (!response.ok) {
+      console.error(
+        `Slack API responded with status ${response.status}: ${response.statusText}`
+      );
+      const errorBody = await response.text();
+      console.error("Slack API error response body:", errorBody);
+    } else {
+      console.log("Slack notification sent successfully!");
+    }
   } catch (error) {
     console.error("Failed to send Slack notification:", error);
   }
