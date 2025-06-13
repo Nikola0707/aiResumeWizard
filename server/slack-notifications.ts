@@ -10,11 +10,6 @@ export async function sendSlackNotification(user: User) {
   }
 
   try {
-    console.log(
-      "Attempting to send Slack notification for user:",
-      user.username
-    );
-
     const message = {
       blocks: [
         {
@@ -63,9 +58,6 @@ export async function sendSlackNotification(user: User) {
     });
 
     if (!response.ok) {
-      console.error(
-        `Slack API responded with status ${response.status}: ${response.statusText}`
-      );
       const errorBody = await response.text();
       console.error("Slack API error response body:", errorBody);
     } else {
