@@ -1,6 +1,7 @@
 import { User } from "@shared/schema";
 
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+console.log("SLACK_WEBHOOK_URL on Render:", SLACK_WEBHOOK_URL);
 
 export async function sendSlackNotification(user: User) {
   if (!SLACK_WEBHOOK_URL) {
