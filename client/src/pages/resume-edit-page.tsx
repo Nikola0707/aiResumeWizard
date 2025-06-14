@@ -66,7 +66,17 @@ export default function ResumeEditPage() {
   const [editSection, setEditSection] = useState("personal-info");
 
   // Fetch resume data
-  const { data: resume, isLoading } = useQuery({
+  const { data: resume, isLoading } = useQuery<{
+    id: number;
+    template: "modern" | "classic" | "professional" | "creative";
+    title: string;
+    content: ResumeContent;
+    userId: number;
+    lastEdited: Date;
+    createdAt: Date;
+    downloads: number;
+    atsScore: number;
+  }>({
     queryKey: [`/api/resumes/${resumeId}`],
     enabled: resumeId !== null,
   });

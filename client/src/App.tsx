@@ -13,6 +13,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { FirebaseAuthProvider } from "./hooks/use-firebase-auth";
 import { ThemeProvider } from "@/components/theme-provider";
+import { useSessionHandler } from "./hooks/use-session-handler";
 
 function Router() {
   return (
@@ -27,16 +28,25 @@ function Router() {
   );
 }
 
+function AppContent() {
+  // Add session handling
+  useSessionHandler();
+
+  return (
+    <TooltipProvider>
+      <Toaster />
+      <Router />
+    </TooltipProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="resume-builder-theme">
         <FirebaseAuthProvider>
           <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
+            <AppContent />
           </AuthProvider>
         </FirebaseAuthProvider>
       </ThemeProvider>

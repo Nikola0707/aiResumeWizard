@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, Download, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { type Resume } from "@shared/schema";
 
 export default function StatCards() {
-  const { data: resumes, isLoading } = useQuery({
+  const { data: resumes, isLoading } = useQuery<Resume[]>({
     queryKey: ["/api/resumes"],
   });
-  
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -27,16 +28,23 @@ export default function StatCards() {
       </div>
     );
   }
-  
+
   // Calculate total downloads and average ATS score
   const totalResumes = resumes?.length || 0;
-  const totalDownloads = resumes?.reduce((sum, resume) => sum + (resume.downloads || 0), 0) || 0;
-  
-  const resumesWithScores = resumes?.filter(resume => resume.atsScore !== null) || [];
-  const avgScore = resumesWithScores.length 
-    ? Math.round(resumesWithScores.reduce((sum, resume) => sum + (resume.atsScore || 0), 0) / resumesWithScores.length) 
+  const totalDownloads =
+    resumes?.reduce((sum, resume) => sum + (resume.downloads || 0), 0) || 0;
+
+  const resumesWithScores =
+    resumes?.filter((resume) => resume.atsScore !== null) || [];
+  const avgScore = resumesWithScores.length
+    ? Math.round(
+        resumesWithScores.reduce(
+          (sum, resume) => sum + (resume.atsScore || 0),
+          0
+        ) / resumesWithScores.length
+      )
     : 0;
-  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
@@ -56,7 +64,7 @@ export default function StatCards() {
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center">
@@ -74,7 +82,7 @@ export default function StatCards() {
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center">

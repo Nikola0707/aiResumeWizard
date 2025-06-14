@@ -251,6 +251,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add ping endpoint for session extension
+  app.post("/api/ping", isAuthenticated, (req, res) => {
+    // Just update the session
+    req.session.touch();
+    res.status(200).json({ message: "Session extended" });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

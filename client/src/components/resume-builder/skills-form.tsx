@@ -3,8 +3,7 @@ import { useForm } from "react-hook-form";
 import { SkillItem, ResumeContent, skillItem } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createEmptySkillItem } from "@/lib/resume-data";
-import { useMutation } from "@tanstack/react-query";
-import { generateSkillSuggestions } from "@/lib/openai";
+
 import {
   Form,
   FormControl,
@@ -14,7 +13,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Wand2, Loader2 } from "lucide-react";
@@ -44,9 +42,7 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
   const [jobDescription, setJobDescription] = useState("");
 
   const [skills, setSkills] = useState<SkillItem[]>(
-    data.skills && data.skills.length > 0
-      ? data.skills
-      : [createEmptySkillItem()]
+    data.skills && data.skills.length > 0 ? data.skills : []
   );
 
   // Set up the form
@@ -257,10 +253,7 @@ export default function SkillsForm({ data, onUpdate }: SkillsFormProps) {
                           <FormItem className="flex-1">
                             <FormLabel>Skill Name</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="e.g. React.js, Project Management"
-                                {...field}
-                              />
+                              <Input placeholder="e.g. React.js" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
