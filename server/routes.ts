@@ -2,8 +2,9 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-// Zod is a TypeScript-first schema validation library that helps ensure data integrity
-// by validating data at runtime and providing type inference at compile time
+// Zod is a TypeScript-first schema validation library that provides two key benefits:
+// 1. Runtime validation: Ensures data matches expected schemas when your code is running
+// 2. Type inference: Automatically generates TypeScript types from my schemas for compile-time type checking
 import { z } from "zod";
 import { insertResumeSchema } from "@shared/schema";
 import {
@@ -145,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI routes
+  // AI generation routes
   app.post("/api/ai/summary", isAuthenticated, async (req, res) => {
     try {
       const stats = await getAIGenerationStats((req.user as any).id);
